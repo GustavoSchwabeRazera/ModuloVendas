@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: exportai-modulo-vendas
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EXPORTAI_CORS_ORIGINS
+        sync: false
+      - key: EXPORTAI_GEMINI_MODEL
+        value: gemini-3.6-flash
+
