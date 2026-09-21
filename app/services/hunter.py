@@ -33,8 +33,20 @@ def buscar_leads(
         )
         response.raise_for_status()
         dados = response.json().get("data", [])
+    except requests.HTTPError as exc:
+        codigo = exc.response.status_code if exc.response is not None else None
+        logger.warning("Hunter respondeu com HTTP %s", codigo)
+        if codigo in {401, 403}:
+            return [], "O Hunter recusou a chave configurada. Verifique HUNTER_API_KEY no Render."
+        if codigo == 429:
+            return [], "A quota do Hunter foi atingida. Tente novamente após renovar os créditos."
+        if codigo in {400, 422}:
+            return [], "O Hunter não aceitou os critérios desta busca. Ajuste produto ou país e tente novamente."
+        if codigo is not None and codigo >= 500:
+            return [], "O Hunter está temporariamente indisponível. Tente novamente em instantes."
+        return [], "Os leads do Hunter não puderam ser carregados agora. O plano continua disponível."
     except requests.RequestException as exc:
-        logger.warning("Falha ao consultar Hunter: %s", type(exc).__name__)
+        logger.warning("Falha de conexão ao consultar Hunter: %s", type(exc).__name__)
         return [], "Os leads do Hunter não puderam ser carregados agora. O plano continua disponível."
     except ValueError:
         logger.warning("Resposta inválida do Hunter")
