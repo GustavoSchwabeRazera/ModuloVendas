@@ -54,10 +54,20 @@ class FontePesquisa(BaseModel):
     url: str
 
 
+class LeadPotencial(BaseModel):
+    nome: str
+    dominio: str
+    site: str
+    status: str = "potencial a validar"
+    fonte: str = "Hunter Discover"
+    emails_profissionais_disponiveis: int | None = None
+
+
 class ProspeccaoResponse(BaseModel):
     status: str = "sucesso"
     relatorio: str
     fontes: list[FontePesquisa] = Field(default_factory=list)
+    leads: list[LeadPotencial] = Field(default_factory=list)
     aviso: str | None = None
 
 

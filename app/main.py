@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.schemas import CriarProspeccaoRequest, HealthResponse, ProspeccaoResponse
 from app.services.gemini import ErroProvedorIA, gerar_prospeccao
+from app.services.hunter import buscar_leads
 
 settings = get_settings()
 app = FastAPI(title="ExportAI - Módulo Vendas", version="1.0.0")
@@ -35,4 +36,5 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
         relatorio, fontes = gerar_prospeccao(entrada, settings)
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    return ProspeccaoResponse(relatorio=relatorio, fontes=fontes)
+    leads, aviso = buscar_leads(entrada, settings)
+    return ProspeccaoResponse(relatorio=relatorio, fontes=fontes, leads=leads, aviso=aviso)
