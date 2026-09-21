@@ -1,5 +1,5 @@
 from __future__ import annotations
-from google import genai
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,10 +14,13 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip().rstrip("/") for origin in self.exportai_cors_origins.split(",") if origin.strip()]
+        return [
+            origin.strip().rstrip("/")
+            for origin in self.exportai_cors_origins.split(",")
+            if origin.strip()
+        ]
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
