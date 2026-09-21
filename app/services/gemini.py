@@ -62,7 +62,7 @@ Entregue em Markdown:
 3. Notícias, tendências e mudanças regulatórias relevantes;
 4. Oportunidades e riscos;
 5. Plano de ação em 30 dias;
-6. E-mail inicial em {entrada.idioma_alvo}, usando campos [entre colchetes].
+6. E-mail inicial em (Idioma do local de destino), usando campos [entre colchetes].
 
 Nunca invente empresas, contatos, sites, volumes ou certificações. Para cada empresa,
 use o status "potencial a validar". Não a chame de cliente confirmado.
