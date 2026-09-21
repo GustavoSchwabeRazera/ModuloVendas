@@ -11,14 +11,11 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     exportai_cors_origins: str = ""
     exportai_gemini_model: str = "gemini-3.8-flash"
+    exportai_pesquisa_web_ativa: bool = True
 
     @property
     def cors_origins(self) -> list[str]:
-        return [
-            origin.strip().rstrip("/")
-            for origin in self.exportai_cors_origins.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip().rstrip("/") for origin in self.exportai_cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

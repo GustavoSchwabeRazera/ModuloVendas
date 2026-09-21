@@ -4,6 +4,7 @@ import logging
 import time
 
 from google import genai
+from google.genai import types
 
 from app.config import Settings
 from app.schemas import CriarProspeccaoRequest
@@ -15,87 +16,80 @@ class ErroProvedorIA(RuntimeError):
     pass
 
 
-def gerar_prospeccao(
-    entrada: CriarProspeccaoRequest,
-    settings: Settings,
-) -> str:
+def extrair_fontes(response) -> list[dict[str, str]]:
+    """Retorna apenas fontes públicas do Google Search Grounding."""
+    fontes: list[dict[str, str]] = []
+    vistos: set[str] = set()
+    for candidate in getattr(response, "candidates", None) or []:
+        metadata = getattr(candidate, "grounding_metadata", None)
+        for chunk in getattr(metadata, "grounding_chunks", None) or []:
+            web = getattr(chunk, "web", None)
+            url = getattr(web, "uri", None)
+            if not url or url in vistos:
+                continue
+            vistos.add(url)
+            fontes.append({"titulo": getattr(web, "title", None) or url, "url": url})
+    return fontes[:12]
+
+
+def gerar_prospeccao(entrada: CriarProspeccaoRequest, settings: Settings) -> tuple[str, list[dict[str, str]]]:
     if not settings.gemini_api_key:
         raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
 
     codigo = entrada.ncm or entrada.hs6 or "não informado"
     contexto = entrada.contexto_origem
     origem = "Preenchimento manual" if not contexto else (
-        f"Origem: {contexto.origem}; "
-        f"score de diagnóstico: {contexto.score_diagnostico}; "
-        f"mercados recomendados: "
-        f"{', '.join(contexto.mercados_recomendados) or 'não informado'}"
+        f"Origem: {contexto.origem}; score de diagnóstico: {contexto.score_diagnostico}; "
+        f"mercados recomendados: {', '.join(contexto.mercados_recomendados) or 'não informado'}"
     )
-
     prompt = f"""
-Entregue em Markdown, com esta estrutura:
+Você é um especialista em comércio exterior e vendas B2B internacionais.
+Crie um plano comercial acionável, responsável e objetivo para exportar:
+- Produto: {entrada.nome_produto}
+- Código HS6/NCM: {codigo}
+- País-alvo: {entrada.pais_alvo}
+- Disponibilidade: {entrada.disponibilidade or 'não informada'}
+- Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
+- Contexto: {origem}
 
-# Inteligência comercial — {entrada.pais_alvo}
+Faça pesquisa web para esta solicitação, priorizando sites oficiais de empresas,
+associações setoriais, organizadores de feiras e órgãos reguladores. Use poucas
+consultas bem focadas.
 
-## Principais canais
-- Distribuidores
-- Importadores
-- Atacadistas
-- Câmaras de comércio
-- Feiras e eventos do setor
+Entregue em Markdown:
+1. Principais canais: distribuidores, importadores, atacadistas, câmaras e feiras;
+2. Empresas e organizações potenciais a validar, com justificativa factual;
+3. Notícias, tendências e mudanças regulatórias relevantes;
+4. Oportunidades e riscos;
+5. Plano de ação em 30 dias;
+6. E-mail inicial em {entrada.idioma_alvo}, usando campos [entre colchetes].
 
-## Empresas e organizações potenciais a validar
-Para cada uma, informe nome, tipo, cidade/país, motivo da relevância, site/fonte pública quando conhecido e status “potencial a validar”.
-
-## Feiras e eventos
-Liste nome, cidade, período aproximado e site oficial quando conhecido.
-
-## Notícias, tendências e mudanças regulatórias
-Indique oportunidades e riscos do mercado, sempre com nível de confiança: alto, médio ou baixo.
-
-## Oportunidades
-- Tendências de demanda
-- Canais prioritários
-- Perfil de comprador ideal
-- Ações recomendadas
-
-## Riscos e validações necessárias
-- Regulamentação e documentação
-- Barreiras logísticas ou tarifárias
-- Dados a confirmar antes de abordar empresas
-
-## Plano de ação em 30 dias
-
-## E-mail inicial
-Escreva em (Veja o Idioma local do destino), usando campos [entre colchetes] para personalização.
-
-Nunca invente empresas, contatos, sites, volumes, certificações ou dados comerciais.
-Empresas listadas devem ser tratadas apenas como “potenciais a validar”, nunca como clientes confirmados.
-Não alegue acesso a informações em tempo real ou bases privadas.
+Nunca invente empresas, contatos, sites, volumes ou certificações. Para cada empresa,
+use o status "potencial a validar". Não a chame de cliente confirmado.
 """.strip()
 
-
     client = genai.Client(api_key=settings.gemini_api_key)
+    config = None
+    if settings.exportai_pesquisa_web_ativa:
+        config = types.GenerateContentConfig(
+            tools=[types.Tool(google_search=types.GoogleSearch())]
+        )
 
     for tentativa in range(3):
         try:
             response = client.models.generate_content(
                 model=settings.exportai_gemini_model,
                 contents=prompt,
+                config=config,
             )
             texto = getattr(response, "text", None)
             if texto:
-                return texto
+                return texto, extrair_fontes(response)
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
-            logger.warning(
-                "Falha no Gemini, tentativa %s/3: %s",
-                tentativa + 1,
-                type(exc).__name__,
-            )
+            logger.warning("Falha no Gemini, tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
             if tentativa == 2:
-                raise ErroProvedorIA(
-                    "Não foi possível gerar a prospecção agora."
-                ) from exc
+                raise ErroProvedorIA("Não foi possível gerar a prospecção agora.") from exc
             time.sleep(2 ** tentativa)
 
     raise ErroProvedorIA("Não foi possível gerar a prospecção agora.")

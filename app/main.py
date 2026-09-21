@@ -32,8 +32,7 @@ def health() -> HealthResponse:
 )
 def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
     try:
-        relatorio = gerar_prospeccao(entrada, settings)
+        relatorio, fontes = gerar_prospeccao(entrada, settings)
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    return ProspeccaoResponse(relatorio=relatorio)
-
+    return ProspeccaoResponse(relatorio=relatorio, fontes=fontes)

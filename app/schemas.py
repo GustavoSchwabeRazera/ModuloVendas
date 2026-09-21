@@ -49,13 +49,18 @@ class CriarProspeccaoRequest(BaseModel):
         return value
 
 
+class FontePesquisa(BaseModel):
+    titulo: str
+    url: str
+
+
 class ProspeccaoResponse(BaseModel):
     status: str = "sucesso"
     relatorio: str
+    fontes: list[FontePesquisa] = Field(default_factory=list)
     aviso: str | None = None
 
 
 class HealthResponse(BaseModel):
     status: str = "ok"
     servico: str = "exportai-modulo-vendas"
-
