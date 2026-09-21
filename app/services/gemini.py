@@ -32,26 +32,47 @@ def gerar_prospeccao(
     )
 
     prompt = f"""
-Você é um especialista em comércio exterior e vendas B2B internacionais.
+Entregue em Markdown, com esta estrutura:
 
-Crie um plano comercial acionável, responsável e objetivo para exportar:
-- Produto: {entrada.nome_produto}
-- Código HS6/NCM: {codigo}
-- País-alvo: {entrada.pais_alvo}
-- Disponibilidade: {entrada.disponibilidade or 'não informada'}
-- Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
-- Contexto: {origem}
+# Inteligência comercial — {entrada.pais_alvo}
 
-Entregue em Markdown, com as seções:
-1. Estratégia para o mercado-alvo;
-2. Perfil de comprador/parceiro ideal;
-3. Critérios de qualificação de parceiros;
-4. Plano de abordagem em 30 dias;
-5. E-mail inicial em {entrada.idioma_alvo};
-6. Próximas ações e riscos a validar.
+## Principais canais
+- Distribuidores
+- Importadores
+- Atacadistas
+- Câmaras de comércio
+- Feiras e eventos do setor
 
-Não invente empresas, contatos ou dados comerciais verificados.
+## Empresas e organizações potenciais a validar
+Para cada uma, informe nome, tipo, cidade/país, motivo da relevância, site/fonte pública quando conhecido e status “potencial a validar”.
+
+## Feiras e eventos
+Liste nome, cidade, período aproximado e site oficial quando conhecido.
+
+## Notícias, tendências e mudanças regulatórias
+Indique oportunidades e riscos do mercado, sempre com nível de confiança: alto, médio ou baixo.
+
+## Oportunidades
+- Tendências de demanda
+- Canais prioritários
+- Perfil de comprador ideal
+- Ações recomendadas
+
+## Riscos e validações necessárias
+- Regulamentação e documentação
+- Barreiras logísticas ou tarifárias
+- Dados a confirmar antes de abordar empresas
+
+## Plano de ação em 30 dias
+
+## E-mail inicial
+Escreva em (Veja o Idioma local do destino), usando campos [entre colchetes] para personalização.
+
+Nunca invente empresas, contatos, sites, volumes, certificações ou dados comerciais.
+Empresas listadas devem ser tratadas apenas como “potenciais a validar”, nunca como clientes confirmados.
+Não alegue acesso a informações em tempo real ou bases privadas.
 """.strip()
+
 
     client = genai.Client(api_key=settings.gemini_api_key)
 
