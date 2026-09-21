@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from google import genai
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str | None = None
     exportai_cors_origins: str = ""
-    exportai_gemini_model: str = "gemini-3.6-flash"
+    exportai_gemini_model: str = "gemini-3.8-flash"
 
     @property
     def cors_origins(self) -> list[str]:
