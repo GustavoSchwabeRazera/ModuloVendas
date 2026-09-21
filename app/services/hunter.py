@@ -28,7 +28,9 @@ def buscar_leads(
         response = requests.post(
             HUNTER_DISCOVER_URL,
             params={"api_key": settings.hunter_api_key},
-            json={"query": consulta, "limit": limite},
+            # O plano gratuito sempre retorna a página padrão (até 100 itens).
+            # `limit` é Premium no Discover; aplicamos nosso limite localmente.
+            json={"query": consulta},
             timeout=12,
         )
         response.raise_for_status()
