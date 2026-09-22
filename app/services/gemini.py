@@ -65,7 +65,7 @@ Entregue em Markdown:
 6. E-mail inicial em (Idioma do local de destino), usando campos [entre colchetes].
 
 Nunca invente empresas, contatos, sites, volumes ou certificações. Para cada empresa,
-use o status "potencial a validar". Não a chame de cliente confirmado.
+use o status "potencial a validar". Não a chame de cliente confirmado. Sempre de os links das empresas
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
