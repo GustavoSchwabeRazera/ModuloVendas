@@ -14,6 +14,9 @@ A lógica central do backend anterior: produto, código fiscal, país e idioma s
 - entrada aceita HS6 com NCM opcional;
 - contexto de módulos anteriores é opcional: a API também funciona por preenchimento manual;
 - a IA é instruída a não inventar empresas, contatos ou dados comerciais verificados.
+- leads do Hunter são validados em lote por evidências públicas antes de receberem
+  o status de aderência ao produto; essa etapa pode ser desligada com
+  `EXPORTAI_VALIDACAO_LEADS_ATIVA=false`.
 
 ## Executar localmente
 

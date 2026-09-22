@@ -61,6 +61,10 @@ class LeadPotencial(BaseModel):
     status: str = "potencial a validar"
     fonte: str = "Hunter Discover"
     emails_profissionais_disponiveis: int | None = None
+    validacao_produto: str = "NAO_CONFIRMADA"
+    justificativa_validacao: str | None = None
+    evidencia_url: str | None = None
+    apto_para_abordagem: bool = False
 
 
 class ProspeccaoResponse(BaseModel):
