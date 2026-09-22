@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     exportai_gemini_model: str = "gemini-3.8-flash"
     exportai_pesquisa_web_ativa: bool = True
     exportai_validacao_leads_ativa: bool = True
+    exportai_dados_tarifarios_ativos: bool = True
     hunter_api_key: str | None = None
     exportai_hunter_ativo: bool = False
     exportai_hunter_limite: int = 5

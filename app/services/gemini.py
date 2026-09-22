@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.schemas import CriarProspeccaoRequest
+from app.schemas import ContextoTarifario, CriarProspeccaoRequest
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,11 @@ def extrair_fontes(response) -> list[dict[str, str]]:
     return fontes[:12]
 
 
-def gerar_prospeccao(entrada: CriarProspeccaoRequest, settings: Settings) -> tuple[str, list[dict[str, str]]]:
+def gerar_prospeccao(
+    entrada: CriarProspeccaoRequest,
+    settings: Settings,
+    contexto_tarifario: ContextoTarifario | None = None,
+) -> tuple[str, list[dict[str, str]]]:
     if not settings.gemini_api_key:
         raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
 
@@ -42,6 +46,7 @@ def gerar_prospeccao(entrada: CriarProspeccaoRequest, settings: Settings) -> tup
         f"Origem: {contexto.origem}; score de diagnóstico: {contexto.score_diagnostico}; "
         f"mercados recomendados: {', '.join(contexto.mercados_recomendados) or 'não informado'}"
     )
+    dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
     prompt = f"""
 Você é um especialista em comércio exterior e vendas B2B internacionais.
 Crie um plano comercial acionável, responsável e objetivo para exportar:
@@ -51,6 +56,7 @@ Crie um plano comercial acionável, responsável e objetivo para exportar:
 - Disponibilidade: {entrada.disponibilidade or 'não informada'}
 - Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
 - Contexto: {origem}
+- Dados históricos de importação brasileira: {dados_tarifarios}
 
 Faça pesquisa web para esta solicitação, priorizando sites oficiais de empresas,
 associações setoriais, organizadores de feiras e órgãos reguladores. Use poucas
@@ -66,6 +72,8 @@ Entregue em Markdown:
 
 Nunca invente empresas, as empresas precisam ter correlação com o produto,empresas precisam pertencer  ao destino escolhido,contatos, sites, volumes ou certificações. Para cada empresa,
 use o status "potencial a validar". Não a chame de cliente confirmado. Sempre de os links das empresas
+Os dados históricos de importação brasileira são somente contexto de mercado. Não os apresente como tarifa,
+regra, volume ou demanda do país-alvo.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
@@ -93,3 +101,16 @@ use o status "potencial a validar". Não a chame de cliente confirmado. Sempre d
             time.sleep(2 ** tentativa)
 
     raise ErroProvedorIA("Não foi possível gerar a prospecção agora.")
+
+
+def _formatar_contexto_tarifario(contexto: ContextoTarifario | None) -> str:
+    if not contexto:
+        return "não disponível"
+    if not contexto.operacoes:
+        return contexto.observacao or "sem operações registradas"
+    return (
+        f"NCM {contexto.ncm}; HS6 {contexto.hs6}; {contexto.operacoes} operações entre "
+        f"{contexto.ano_inicial} e {contexto.ano_final}; {contexto.kg_liquido} kg; "
+        f"FOB US$ {contexto.valor_fob_usd}; alíquota média de II {contexto.aliquota_media_ii}% "
+        f"(apenas importações brasileiras)."
+    )

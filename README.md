@@ -49,3 +49,9 @@ Documentação: `http://127.0.0.1:8000/docs`.
 ```
 
 O campo `contexto_origem` é opcional. Não envie tokens, chaves ou informações pessoais pelo navegador.
+# Base tarifária local
+
+Os arquivos `data/indice_ncm_hs6.parquet` e `data/fato_importacoes_tarifas.parquet`
+compõem a base local do módulo. O primeiro converte NCM em HS6; o segundo resume
+operações históricas de importação no Brasil. Os dados enriquecem a prospecção, mas
+não devem ser tratados como tarifas ou demanda do país-alvo.

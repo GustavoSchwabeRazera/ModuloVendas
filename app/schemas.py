@@ -54,6 +54,23 @@ class FontePesquisa(BaseModel):
     url: str
 
 
+class ContextoTarifario(BaseModel):
+    """Resumo de importações brasileiras disponível para enriquecer a prospecção."""
+
+    ncm: str | None = None
+    hs6: str | None = None
+    descricao_ncm: str | None = None
+    ano_inicial: int | None = None
+    ano_final: int | None = None
+    operacoes: int | None = None
+    kg_liquido: int | None = None
+    valor_fob_usd: int | None = None
+    valor_frete_usd: int | None = None
+    valor_seguro_usd: int | None = None
+    aliquota_media_ii: float | None = None
+    observacao: str | None = None
+
+
 class LeadPotencial(BaseModel):
     nome: str
     dominio: str
@@ -70,6 +87,7 @@ class LeadPotencial(BaseModel):
 class ProspeccaoResponse(BaseModel):
     status: str = "sucesso"
     relatorio: str
+    contexto_tarifario: ContextoTarifario | None = None
     fontes: list[FontePesquisa] = Field(default_factory=list)
     leads: list[LeadPotencial] = Field(default_factory=list)
     aviso: str | None = None

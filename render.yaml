@@ -15,3 +15,11 @@ services:
         sync: false
       - key: EXPORTAI_GEMINI_MODEL
         value: gemini-3.6-flash
+      - key: HUNTER_API_KEY
+        sync: false
+      - key: EXPORTAI_HUNTER_ATIVO
+        value: true
+      - key: EXPORTAI_DADOS_TARIFARIOS_ATIVOS
+        value: true
+      - key: EXPORTAI_VALIDACAO_LEADS_ATIVA
+        value: false
