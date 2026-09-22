@@ -64,7 +64,7 @@ Entregue em Markdown:
 5. Plano de ação em 30 dias;
 6. E-mail inicial em (Idioma do local de destino), usando campos [entre colchetes].
 
-Nunca invente empresas, contatos, sites, volumes ou certificações. Para cada empresa,
+Nunca invente empresas, as empresas precisam ter correlação com o produto,empresas precisam pertencer  ao destino escolhido,contatos, sites, volumes ou certificações. Para cada empresa,
 use o status "potencial a validar". Não a chame de cliente confirmado. Sempre de os links das empresas
 """.strip()
 
