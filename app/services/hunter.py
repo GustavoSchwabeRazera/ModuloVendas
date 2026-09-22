@@ -20,9 +20,12 @@ def buscar_leads(
         return [], None
 
     limite = max(1, min(settings.exportai_hunter_limite, 5))
+    # O Discover interpreta consultas em linguagem natural. A formulação em inglês
+    # tem resultado mais consistente para empresas internacionais, mesmo quando o
+    # produto foi informado em português pelo usuário.
     consulta = (
-        f"Importadores, distribuidores ou atacadistas de {entrada.nome_produto} "
-        f"em {entrada.pais_alvo}"
+        f"B2B importers, distributors or wholesalers that source, sell or distribute "
+        f"{entrada.nome_produto} in {entrada.pais_alvo}."
     )
     try:
         response = requests.post(
@@ -54,6 +57,12 @@ def buscar_leads(
         logger.warning("Resposta inválida do Hunter")
         return [], "Os leads do Hunter retornaram em formato inválido."
 
+    if not dados:
+        return [], (
+            "O Hunter não encontrou empresas para estes critérios. "
+            "Tente ajustar o produto, o país ou o perfil de parceiro."
+        )
+
     leads: list[LeadPotencial] = []
     for item in dados[:limite]:
         dominio = str(item.get("domain") or "").strip().lower()
@@ -70,4 +79,6 @@ def buscar_leads(
                 emails_profissionais_disponiveis=total if isinstance(total, int) else None,
             )
         )
+    if not leads:
+        return [], "O Hunter retornou empresas sem domínio público utilizável para exibir."
     return leads, None
