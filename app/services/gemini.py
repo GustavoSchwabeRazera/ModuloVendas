@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 
@@ -37,6 +38,7 @@ def gerar_prospeccao(
     settings: Settings,
     contexto_tarifario: ContextoTarifario | None = None,
 ) -> tuple[str, list[dict[str, str]]]:
+    """Gera o plano comercial em Markdown (Tópicos 1 ao 6)."""
     if not settings.gemini_api_key:
         raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
 
@@ -47,6 +49,7 @@ def gerar_prospeccao(
         f"mercados recomendados: {', '.join(contexto.mercados_recomendados) or 'não informado'}"
     )
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
+    
     prompt = f"""
 Você é um especialista em comércio exterior e vendas B2B internacionais.
 Crie um plano comercial acionável, responsável e objetivo para exportar:
@@ -58,22 +61,24 @@ Crie um plano comercial acionável, responsável e objetivo para exportar:
 - Contexto: {origem}
 - Dados históricos de importação brasileira: {dados_tarifarios}
 
-Faça pesquisa web para esta solicitação, priorizando sites oficiais de empresas,
-associações setoriais, organizadores de feiras e órgãos reguladores. Use poucas
-consultas bem focadas.
+Atue como um consultor especialista em comércio exterior. A partir do [PRODUTO] e [PAÍS DE DESTINO], entregue um plano comercial estruturado em Markdown, contendo exatamente os seguintes tópicos:
 
-Entregue em Markdown:
-1. Principais canais: distribuidores, importadores, atacadistas, câmaras e feiras;
-2. Empresas e organizações potenciais a validar, com justificativa factual;
-3. Notícias, tendências e mudanças regulatórias relevantes;
-4. Oportunidades e riscos;
-5. Plano de ação em 30 dias;
-6. E-mail inicial em (Idioma do local de destino), usando campos [entre colchetes].
+1. Principais canais: distribuidores, importadores, atacadistas, câmaras de comércio e feiras do setor. (Obrigatório: Para feiras e eventos, utilize sempre o nome oficial completo e atualizado em inglês ou no idioma local, evitando siglas genéricas).
+2. Empresas e organizações potenciais a validar, com justificativa factual de por que fazem sentido para este produto.
+3. Notícias, tendências e mudanças regulatórias relevantes para o setor no país de destino.
+4. Oportunidades e riscos.
+5. Plano de ação em 30 dias.
+6. E-mail inicial de prospecção comercial em (Idioma do local de destino), usando campos [entre colchetes] para as variáveis.
 
-Nunca invente empresas, as empresas precisam ter correlação com o produto,empresas precisam pertencer  ao destino escolhido,contatos, sites, volumes ou certificações. Para cada empresa,
-use o status "potencial a validar". Não a chame de cliente confirmado. Sempre de os links das empresas
-Os dados históricos de importação brasileira são somente contexto de mercado. Não os apresente como tarifa,
-regra, volume ou demanda do país-alvo.
+REGRAS E RESTRIÇÕES CRÍTICAS (ANTI-ALUCINAÇÃO):
+- NUNCA invente nomes de empresas, feiras, eventos, organizações, contatos, volumes ou certificações. Baseie-se apenas em entidades reais.
+- Aderência: As empresas, câmaras e feiras citadas devem pertencer comprovadamente ao país de destino escolhido e atuar diretamente no segmento do produto.
+- Status: Para cada empresa citada, use obrigatoriamente a tag "Status: Potencial a validar". Jamais as chame de clientes confirmados.
+- URLs e Contatos: Modelos de IA costumam gerar links imprecisos ao tentar adivinhar domínios de empresas. Portanto, SÓ FORNEÇA UMA URL se for o site de uma organização globalmente conhecida ou de domínio governamental público. 
+- Para as empresas de nicho sugeridas, NÃO TENTE ADIVINHAR A URL. Em vez disso, forneça a instrução exata de busca. Exemplo de formato obrigatório: 
+Nome da Empresa: [Nome real]
+Como encontrar: Pesquise no Google por "[Nome real da empresa] + [País/Cidade] + importador"
+- Contexto de Dados: Dados históricos de importação brasileira devem ser tratados exclusivamente como contexto de mercado. Jamais os apresente como tarifa, regra aduaneira, volume garantido ou demanda atual do país-alvo.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
@@ -95,12 +100,80 @@ regra, volume ou demanda do país-alvo.
                 return texto, extrair_fontes(response)
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
-            logger.warning("Falha no Gemini, tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
+            logger.warning("Falha no Gemini (Plano Comercial), tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
             if tentativa == 2:
                 raise ErroProvedorIA("Não foi possível gerar a prospecção agora.") from exc
             time.sleep(2 ** tentativa)
 
     raise ErroProvedorIA("Não foi possível gerar a prospecção agora.")
+
+
+def buscar_empresas_potenciais(
+    entrada: CriarProspeccaoRequest,
+    settings: Settings,
+) -> list[dict]:
+    """
+    Substitui o Hunter.io. Retorna um array de dicionários (JSON) com 4 empresas reais 
+    para o front-end renderizar os quadrados (cards) de validação de mercado.
+    """
+    if not settings.gemini_api_key:
+        raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
+
+    prompt_empresas = f"""
+Aja como um pesquisador de mercado B2B de alto nível.
+Busque 4 empresas REAIS e ativas no país '{entrada.pais_alvo}' que atuem como {entrada.perfil_parceiro or 'importadores/distribuidores'} do produto '{entrada.nome_produto}'.
+
+Sua resposta deve ser EXATAMENTE um array JSON contendo 4 objetos. Não adicione textos antes ou depois.
+Estrutura obrigatória de cada objeto:
+{{
+    "nome_empresa": "Nome oficial da empresa",
+    "perfil_parceiro": "Ex: Distribuidor B2B / Atacadista (em português)",
+    "justificativa": "Por que faz sentido prospectar esta empresa (1 frase curta, em português)",
+    "site": "URL oficial completa (certifique-se da validade ou retorne null)",
+    "email_contato": "E-mail de contato público geral, ex: info@, sales@ (se não encontrar na web, retorne null obrigatoriamente. NUNCA invente e-mails)"
+}}
+
+REGRAS:
+1. USE A PESQUISA WEB para confirmar que as empresas e os sites são reais e pertencem a {entrada.pais_alvo}.
+2. Se não tiver certeza absoluta do site ou do e-mail, coloque null.
+3. Não use blocos de código Markdown (` ```json `), devolva apenas o JSON puro.
+"""
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    
+    # Configuramos a API para retornar estritamente JSON e forçamos o uso do Google Search
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        tools=[types.Tool(google_search=types.GoogleSearch())],
+        temperature=0.2, # Temperatura baixa para focar em precisão e evitar alucinação
+    )
+
+    for tentativa in range(3):
+        try:
+            response = client.models.generate_content(
+                model=settings.exportai_gemini_model,
+                contents=prompt_empresas,
+                config=config,
+            )
+            texto_json = getattr(response, "text", None)
+            
+            if texto_json:
+                try:
+                    # Faz o parse da string devolvida pela IA para um objeto Python nativo
+                    empresas_encontradas = json.loads(texto_json)
+                    return empresas_encontradas
+                except json.JSONDecodeError as json_err:
+                    logger.error("Erro ao fazer o parse do JSON do Gemini: %s", json_err)
+                    raise ErroProvedorIA("A resposta da IA não veio em um formato estruturado válido.")
+            
+            raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
+        except Exception as exc:
+            logger.warning("Falha no Gemini (Busca de Empresas), tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
+            if tentativa == 2:
+                raise ErroProvedorIA("Não foi possível buscar empresas potenciais agora.") from exc
+            time.sleep(2 ** tentativa)
+
+    raise ErroProvedorIA("Não foi possível buscar empresas potenciais agora.")
 
 
 def _formatar_contexto_tarifario(contexto: ContextoTarifario | None) -> str:
