@@ -61,24 +61,33 @@ Crie um plano comercial acionável, responsável e objetivo para exportar:
 - Contexto: {origem}
 - Dados históricos de importação brasileira: {dados_tarifarios}
 
-Atue como um consultor especialista em comércio exterior. A partir do [PRODUTO] e [PAÍS DE DESTINO], entregue um plano comercial estruturado em Markdown, contendo exatamente os seguintes tópicos:
+Altere apenas o texto do prompt dentro de `gerar_prospeccao` em `app/services/gemini.py`.
 
-1. Principais canais: distribuidores, importadores, atacadistas, câmaras de comércio e feiras do setor. (Obrigatório: Para feiras e eventos, utilize sempre o nome oficial completo e atualizado em inglês ou no idioma local, evitando siglas genéricas).
-2. Empresas e organizações potenciais a validar, com justificativa factual de por que fazem sentido para este produto.
-3. Notícias, tendências e mudanças regulatórias relevantes para o setor no país de destino.
-4. Oportunidades e riscos.
-5. Plano de ação em 30 dias.
-6. E-mail inicial de prospecção comercial em (Idioma do local de destino), usando campos [entre colchetes] para as variáveis.
+Não altere funções, endpoint, schema, Hunter, frontend, variáveis de ambiente ou fluxo atual.
 
-REGRAS E RESTRIÇÕES CRÍTICAS (ANTI-ALUCINAÇÃO):
-- NUNCA invente nomes de empresas, feiras, eventos, organizações, contatos, volumes ou certificações. Baseie-se apenas em entidades reais.
-- Aderência: As empresas, câmaras e feiras citadas devem pertencer comprovadamente ao país de destino escolhido e atuar diretamente no segmento do produto.
-- Status: Para cada empresa citada, use obrigatoriamente a tag "Status: Potencial a validar". Jamais as chame de clientes confirmados.
-- URLs e Contatos: Modelos de IA costumam gerar links imprecisos ao tentar adivinhar domínios de empresas. Portanto, SÓ FORNEÇA UMA URL se for o site de uma organização globalmente conhecida ou de domínio governamental público. 
-- Para as empresas de nicho sugeridas, NÃO TENTE ADIVINHAR A URL. Em vez disso, forneça a instrução exata de busca. Exemplo de formato obrigatório: 
-Nome da Empresa: [Nome real]
-Como encontrar: Pesquise no Google por "[Nome real da empresa] + [País/Cidade] + importador"
-- Contexto de Dados: Dados históricos de importação brasileira devem ser tratados exclusivamente como contexto de mercado. Jamais os apresente como tarifa, regra aduaneira, volume garantido ou demanda atual do país-alvo.
+No relatório comercial, mantenha os seis tópicos existentes, mas ajuste o tópico 2 para obedecer:
+
+2. Empresas Potenciais a Validar
+
+- Liste somente empresas reais para as quais exista evidência pública obtida na pesquisa web.
+- Cada empresa deve aparecer como “Potencial a validar”; nunca como cliente confirmado.
+- Para cada empresa, informe:
+  - Nome oficial;
+  - Perfil ou papel B2B;
+  - Justificativa factual curta;
+  - Link oficial em Markdown no formato: [Visitar site](URL).
+- Só inclua link quando a URL tiver sido confirmada pela pesquisa web ou for domínio oficial conhecido. Nunca invente URLs.
+- Quando não houver URL confiável, escreva “Site oficial não confirmado”.
+- Não invente empresas, contatos, e-mails, volumes, certificações ou relações comerciais.
+- Não inclua varejistas, supermercados, restaurantes, associações, governos ou empresas de máquinas/equipamentos quando o produto for matéria-prima ou alimento.
+- Priorize importadores, distribuidores B2B, atacadistas e compradores industriais aderentes ao produto e ao país-alvo.
+
+Sobre contatos:
+- Não gere, deduza ou invente e-mails.
+- Como a versão atual ainda não recebe e-mails reais do Hunter, escreva apenas “Contato profissional: disponível no card, quando localizado pelo sistema”.
+- Prepare o texto para uma futura integração de contatos copiáveis, mas não implemente essa integração agora.
+
+Preserve todos os demais tópicos, regras anti-alucinação, uso opcional da pesquisa web e retorno atual.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
