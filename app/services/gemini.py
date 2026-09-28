@@ -61,33 +61,54 @@ Crie um plano comercial acionável, responsável e objetivo para exportar:
 - Contexto: {origem}
 - Dados históricos de importação brasileira: {dados_tarifarios}
 
-Altere apenas o texto do prompt dentro de `gerar_prospeccao` em `app/services/gemini.py`.
+Entregue o relatório em Markdown, exatamente nos seis tópicos abaixo:
 
-Não altere funções, endpoint, schema, Hunter, frontend, variáveis de ambiente ou fluxo atual.
-
-No relatório comercial, mantenha os seis tópicos existentes, mas ajuste o tópico 2 para obedecer:
+1. Análise de Mercado e Adequação do Produto
+Avalie a entrada de {entrada.nome_produto} em {entrada.pais_alvo}, o posicionamento
+adequado ao volume informado e requisitos comerciais relevantes.
 
 2. Empresas Potenciais a Validar
+Liste apenas importadores B2B, distribuidores, atacadistas ou compradores
+industriais reais e aderentes ao produto no país-alvo. Para cada empresa, use:
+- Nome oficial;
+- Perfil ou papel B2B;
+- Status: Potencial a validar;
+- Justificativa factual curta;
+- Link oficial em Markdown no formato [Visitar site](URL).
 
-- Liste somente empresas reais para as quais exista evidência pública obtida na pesquisa web.
-- Cada empresa deve aparecer como “Potencial a validar”; nunca como cliente confirmado.
-- Para cada empresa, informe:
-  - Nome oficial;
-  - Perfil ou papel B2B;
-  - Justificativa factual curta;
-  - Link oficial em Markdown no formato: [Visitar site](URL).
-- Só inclua link quando a URL tiver sido confirmada pela pesquisa web ou for domínio oficial conhecido. Nunca invente URLs.
-- Quando não houver URL confiável, escreva “Site oficial não confirmado”.
-- Não invente empresas, contatos, e-mails, volumes, certificações ou relações comerciais.
-- Não inclua varejistas, supermercados, restaurantes, associações, governos ou empresas de máquinas/equipamentos quando o produto for matéria-prima ou alimento.
-- Priorize importadores, distribuidores B2B, atacadistas e compradores industriais aderentes ao produto e ao país-alvo.
+Inclua o link somente se ele for um domínio oficial confirmado em pesquisa
+pública. Quando não houver URL confiável, escreva "Site oficial não confirmado".
+Escreva exatamente: "Contato profissional: disponível no card, quando localizado
+pelo sistema." Nunca invente ou deduza e-mails, contatos, domínios, empresas
+ou relações comerciais.
 
-Sobre contatos:
-- Não gere, deduza ou invente e-mails.
-- Como a versão atual ainda não recebe e-mails reais do Hunter, escreva apenas “Contato profissional: disponível no card, quando localizado pelo sistema”.
-- Prepare o texto para uma futura integração de contatos copiáveis, mas não implemente essa integração agora.
+3. Estratégia de Abordagem B2B
+Descreva o primeiro contato, proposta de valor, tom de voz e CTA adequados ao
+perfil de parceiro e à cultura de negócios de {entrada.pais_alvo}.
 
-Preserve todos os demais tópicos, regras anti-alucinação, uso opcional da pesquisa web e retorno atual.
+4. Termos de Comércio e Logística Recomendados
+Sugira Incoterms e documentação inicial compatíveis com o produto, o volume e
+o estágio comercial. Diferencie amostras ou lotes piloto de operações recorrentes.
+
+5. Requisitos Regulatórios e Aduaneiros
+Explique requisitos técnicos, sanitários, ambientais, regulatórios e aduaneiros
+aplicáveis a {entrada.nome_produto} em {entrada.pais_alvo}. Só cite normas
+específicas quando houver evidência pública suficiente.
+
+6. Plano de Ação Imediato
+Liste de três a cinco ações práticas, sequenciais e cronológicas para as
+próximas semanas, incluindo preparação comercial e validação dos parceiros.
+
+REGRAS CRÍTICAS ANTI-ALUCINAÇÃO:
+- Nunca invente empresas, organizações, contatos, e-mails, volumes,
+certificações, preços, tarifas, relações comerciais ou fontes.
+- Não inclua supermercados, varejistas, restaurantes, governos, associações
+ou empresas de máquinas e equipamentos quando não forem o perfil B2B adequado.
+- Trate toda empresa como potencial a validar, jamais como cliente confirmado.
+- Dados históricos de importação brasileira são somente contexto de mercado;
+nunca os apresente como tarifa vigente, demanda atual ou volume garantido no
+país-alvo.
+- Se não houver evidência pública suficiente, declare a limitação claramente.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
