@@ -51,93 +51,67 @@ def gerar_prospeccao(
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
     
     prompt = f"""
-Você é um analista sênior de comércio exterior e prospecção B2B internacional.
+Atue como especialista sênior em comércio exterior e prospecção B2B internacional.
 
-Crie uma inteligência comercial atual, objetiva e baseada exclusivamente em
-pesquisa pública verificável para a exportação abaixo:
+Crie uma análise comercial objetiva, atual e responsável para exportar o produto informado. Use somente informações verificáveis. Não invente empresas, contatos, e-mails, links, certificações, exigências, volumes, preços ou dados de mercado. Quando houver incerteza, indique que a validação é necessária.
 
-- Produto: {entrada.nome_produto}
-- HS6/NCM: {codigo}
-- País-alvo: {entrada.pais_alvo}
-- Quantidade disponível: {entrada.disponibilidade or "não informada"}
-- Perfil de comprador: {entrada.perfil_parceiro or "Importador B2B / Distribuidor / Atacadista"}
-- Contexto recebido: {origem}
-- Dados históricos brasileiros: {dados_tarifarios}
+CONTEXTO DA OPERAÇÃO
+- Produto: {produto}
+- HS6: {hs6 or "não informado"}
+- NCM: {ncm or "não informado"}
+- País-alvo: {pais}
+- Quantidade disponível: {volume}
+- Perfil de comprador: {perfil}
+- Contexto recebido: {dados_historicos or "não informado"}
 
-Use pesquisa web para obter informações atuais. Entregue o resultado em Markdown
-com exatamente estas três seções:
+Retorne exatamente nas seções abaixo, usando os títulos exatamente como escritos.
 
-# 1. Panorama comercial
+# PANORAMA_COMERCIAL
+Escreva um texto único, em 2 a 4 parágrafos bem conectados, sem subtítulos internos.
+Explique a adequação do produto ao país, perfil de compradores B2B mais relevante, oportunidade comercial, cuidados logísticos e regulatórios essenciais. Não use os títulos “Canais de entrada”, “Riscos”, “Oportunidades”, “Requisitos regulatórios” ou “Fontes públicas consultadas”.
 
-Produza um resumo estratégico objetivo sobre o mercado de {entrada.pais_alvo}
-para {entrada.nome_produto}, reunindo cenário comercial, canais, riscos,
-oportunidades e requisitos relevantes em texto corrido.
+# COMPRADORES_POTENCIAIS
+Liste apenas empresas reais quando houver evidência pública suficiente. Cada item deve conter:
+- Nome oficial;
+- Papel B2B;
+- Justificativa factual curta;
+- Link oficial no formato [Visitar site](URL), somente se o domínio for confirmado.
+Trate todas como “potencial a validar”. Nunca crie e-mails ou contatos. Caso não haja empresas verificáveis, escreva apenas: “Nenhum comprador com site oficial validado foi identificado nesta consulta.”
 
-Não use os subtítulos:
-- Canais de entrada
-- Riscos
-- Oportunidades
-- Requisitos regulatórios
-- Fontes públicas consultadas
+# PLANO_DE_ACAO_30_DIAS
+Crie um plano prático e específico para este produto, país e volume. Use estas quatro partes:
 
-# 2. Compradores potenciais a validar
-Liste somente empresas reais do país-alvo que atuem como importadoras,
-distribuidoras B2B, atacadistas ou compradoras industriais aderentes ao produto.
+## Dias 1–7
+- 2 a 4 ações de preparação comercial e documental.
 
-Para cada empresa, informe:
-- **Nome**
-- **Perfil B2B**
-- **Justificativa**: uma frase factual
-- **Status**: Potencial a validar
-- **Site**: [Visitar site](URL)
+## Dias 8–14
+- 2 a 4 ações de validação técnica, regulatória e priorização de compradores.
 
-REGRAS PARA LINKS:
-- Inclua apenas links encontrados e confirmados em pesquisa pública.
-- A URL precisa ser o domínio oficial da empresa.
-- Nunca invente empresa, domínio, link, contato ou e-mail.
-- Se não houver site oficial confiável, não inclua a empresa.
-- Exclua supermercados, varejistas, restaurantes, órgãos públicos,
-  associações e empresas de máquinas/equipamentos quando não forem o parceiro
-  B2B adequado ao produto.
+## Dias 15–21
+- 2 a 4 ações de abordagem B2B, envio de apresentação e follow-up.
+
+## Dias 22–30
+- 2 a 4 ações de reuniões, amostras/proposta comercial e decisão dos próximos passos.
+
+Quando uma exigência depender de confirmação, escreva “validar com o importador ou órgão competente”.
 
 # E-MAIL_COMERCIAL
+Gere um e-mail profissional pronto para edição, no idioma comercial predominante do país-alvo.
 
-Retorne exatamente neste formato:
-
-ASSUNTO: [assunto no idioma do país-alvo]
+ASSUNTO: [assunto curto e comercial]
 
 CORPO:
-[corpo completo do e-mail no idioma do país-alvo]
+[Saudação]
 
-Gere um e-mail B2B profissional, personalizado para produto, volume, país e perfil de parceiro. Use campos editáveis quando faltar dado, como [Nome da empresa], [Nome do contato] e [Assinatura]. Não escreva explicações fora desse bloco.
-{entrada.pais_alvo}.
+[Apresente o produto, disponibilidade e proposta de valor sem prometer algo não informado.]
 
-Formato obrigatório:
+[Convide para conversar, solicitar catálogo/especificações ou avaliar amostras.]
 
-**Assunto:** curto, específico e profissional.
+[Encerramento profissional]
+[Nome da empresa]
+[Nome do responsável]
 
-**E-mail:**
-- Saudação formal adequada à cultura do país;
-- Apresentação breve da empresa exportadora com campos editáveis:
-  [Nome da empresa], [Cidade/País], [Site];
-- Apresente {entrada.nome_produto}, disponibilidade de
-  {entrada.disponibilidade or "volume a confirmar"} e proposta de valor;
-- Não invente certificações, preços, prazos, estoque, clientes ou capacidade
-  produtiva. Use campos como [certificação, se aplicável] quando necessário;
-- Solicite uma ação simples: reunião breve, envio de catálogo ou avaliação de
-  amostra;
-- Encerramento profissional e assinatura editável:
-  [Nome], [Cargo], [Empresa], [E-mail], [Telefone].
-
-  
-
-O texto deve ser direto, personalizado para o perfil
-{entrada.perfil_parceiro or "importador/distribuidor B2B"} e ter no máximo
-180 palavras. Não escreva explicações antes ou depois do e-mail.
-
-Não invente certificações, preços, prazos, contatos, compradores confirmados ou
-parcerias existentes. Quando não houver evidência suficiente, indique a limitação
-de forma clara.
+O e-mail não deve mencionar que foi produzido por IA e não deve incluir contatos inventados.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
