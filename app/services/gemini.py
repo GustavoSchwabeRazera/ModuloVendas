@@ -99,15 +99,30 @@ REGRAS PARA LINKS:
   B2B adequado ao produto.
 
 # 3. E-mail comercial inicial
-Gere um e-mail profissional no idioma principal de {entrada.pais_alvo}.
 
-Inclua:
-- assunto curto;
-- saudação formal;
-- apresentação do exportador usando campos editáveis entre colchetes;
-- produto, volume disponível e proposta de valor;
-- convite para conversa, amostra ou envio de catálogo;
-- encerramento profissional.
+Gere um e-mail B2B pronto para revisão no idioma principal de
+{entrada.pais_alvo}.
+
+Formato obrigatório:
+
+**Assunto:** curto, específico e profissional.
+
+**E-mail:**
+- Saudação formal adequada à cultura do país;
+- Apresentação breve da empresa exportadora com campos editáveis:
+  [Nome da empresa], [Cidade/País], [Site];
+- Apresente {entrada.nome_produto}, disponibilidade de
+  {entrada.disponibilidade or "volume a confirmar"} e proposta de valor;
+- Não invente certificações, preços, prazos, estoque, clientes ou capacidade
+  produtiva. Use campos como [certificação, se aplicável] quando necessário;
+- Solicite uma ação simples: reunião breve, envio de catálogo ou avaliação de
+  amostra;
+- Encerramento profissional e assinatura editável:
+  [Nome], [Cargo], [Empresa], [E-mail], [Telefone].
+
+O texto deve ser direto, personalizado para o perfil
+{entrada.perfil_parceiro or "importador/distribuidor B2B"} e ter no máximo
+180 palavras. Não escreva explicações antes ou depois do e-mail.
 
 Não invente certificações, preços, prazos, contatos, compradores confirmados ou
 parcerias existentes. Quando não houver evidência suficiente, indique a limitação
