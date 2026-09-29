@@ -67,16 +67,18 @@ pesquisa pública verificável para a exportação abaixo:
 Use pesquisa web para obter informações atuais. Entregue o resultado em Markdown
 com exatamente estas três seções:
 
-# 1. Panorama atual do mercado
-Explique de forma prática:
-- cenário atual, canais de entrada e perfil de demanda;
-- tendências, oportunidades e riscos;
-- requisitos regulatórios, técnicos, sanitários, ambientais e aduaneiros;
-- recomendação de posicionamento para o volume informado.
+# 1. Panorama comercial
 
-Só cite dados específicos, normas, tarifas ou tendências quando houver evidência
-pública. Dados históricos brasileiros são apenas contexto e nunca representam
-demanda, tarifa ou regra atual do país-alvo.
+Produza um resumo estratégico objetivo sobre o mercado de {entrada.pais_alvo}
+para {entrada.nome_produto}, reunindo cenário comercial, canais, riscos,
+oportunidades e requisitos relevantes em texto corrido.
+
+Não use os subtítulos:
+- Canais de entrada
+- Riscos
+- Oportunidades
+- Requisitos regulatórios
+- Fontes públicas consultadas
 
 # 2. Compradores potenciais a validar
 Liste somente empresas reais do país-alvo que atuem como importadoras,
