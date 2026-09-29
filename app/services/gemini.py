@@ -51,64 +51,67 @@ def gerar_prospeccao(
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
     
     prompt = f"""
-Você é um especialista em comércio exterior e vendas B2B internacionais.
-Crie um plano comercial acionável, responsável e objetivo para exportar:
+Você é um analista sênior de comércio exterior e prospecção B2B internacional.
+
+Crie uma inteligência comercial atual, objetiva e baseada exclusivamente em
+pesquisa pública verificável para a exportação abaixo:
+
 - Produto: {entrada.nome_produto}
-- Código HS6/NCM: {codigo}
+- HS6/NCM: {codigo}
 - País-alvo: {entrada.pais_alvo}
-- Disponibilidade: {entrada.disponibilidade or 'não informada'}
-- Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
-- Contexto: {origem}
-- Dados históricos de importação brasileira: {dados_tarifarios}
+- Quantidade disponível: {entrada.disponibilidade or "não informada"}
+- Perfil de comprador: {entrada.perfil_parceiro or "Importador B2B / Distribuidor / Atacadista"}
+- Contexto recebido: {origem}
+- Dados históricos brasileiros: {dados_tarifarios}
 
-Entregue o relatório em Markdown, exatamente nos seis tópicos abaixo:
+Use pesquisa web para obter informações atuais. Entregue o resultado em Markdown
+com exatamente estas três seções:
 
-1. Análise de Mercado e Adequação do Produto
-Avalie a entrada de {entrada.nome_produto} em {entrada.pais_alvo}, o posicionamento
-adequado ao volume informado e requisitos comerciais relevantes.
+# 1. Panorama atual do mercado
+Explique de forma prática:
+- cenário atual, canais de entrada e perfil de demanda;
+- tendências, oportunidades e riscos;
+- requisitos regulatórios, técnicos, sanitários, ambientais e aduaneiros;
+- recomendação de posicionamento para o volume informado.
 
-2. Empresas Potenciais a Validar
-Liste apenas importadores B2B, distribuidores, atacadistas ou compradores
-industriais reais e aderentes ao produto no país-alvo. Para cada empresa, use:
-- Nome oficial;
-- Perfil ou papel B2B;
-- Status: Potencial a validar;
-- Justificativa factual curta;
-- Link oficial em Markdown no formato [Visitar site](URL).
+Só cite dados específicos, normas, tarifas ou tendências quando houver evidência
+pública. Dados históricos brasileiros são apenas contexto e nunca representam
+demanda, tarifa ou regra atual do país-alvo.
 
-Inclua o link somente se ele for um domínio oficial confirmado em pesquisa
-pública. Quando não houver URL confiável, escreva "Site oficial não confirmado".
-Escreva exatamente: "Contato profissional: disponível no card, quando localizado
-pelo sistema." Nunca invente ou deduza e-mails, contatos, domínios, empresas
-ou relações comerciais.
+# 2. Compradores potenciais a validar
+Liste somente empresas reais do país-alvo que atuem como importadoras,
+distribuidoras B2B, atacadistas ou compradoras industriais aderentes ao produto.
 
-3. Estratégia de Abordagem B2B
-Descreva o primeiro contato, proposta de valor, tom de voz e CTA adequados ao
-perfil de parceiro e à cultura de negócios de {entrada.pais_alvo}.
+Para cada empresa, informe:
+- **Nome**
+- **Perfil B2B**
+- **Justificativa**: uma frase factual
+- **Status**: Potencial a validar
+- **Site**: [Visitar site](URL)
 
-4. Termos de Comércio e Logística Recomendados
-Sugira Incoterms e documentação inicial compatíveis com o produto, o volume e
-o estágio comercial. Diferencie amostras ou lotes piloto de operações recorrentes.
+REGRAS PARA LINKS:
+- Inclua apenas links encontrados e confirmados em pesquisa pública.
+- A URL precisa ser o domínio oficial da empresa.
+- Nunca invente empresa, domínio, link, contato ou e-mail.
+- Se não houver site oficial confiável, não inclua a empresa.
+- Exclua supermercados, varejistas, restaurantes, órgãos públicos,
+  associações e empresas de máquinas/equipamentos quando não forem o parceiro
+  B2B adequado ao produto.
 
-5. Requisitos Regulatórios e Aduaneiros
-Explique requisitos técnicos, sanitários, ambientais, regulatórios e aduaneiros
-aplicáveis a {entrada.nome_produto} em {entrada.pais_alvo}. Só cite normas
-específicas quando houver evidência pública suficiente.
+# 3. E-mail comercial inicial
+Gere um e-mail profissional no idioma principal de {entrada.pais_alvo}.
 
-6. Plano de Ação Imediato
-Liste de três a cinco ações práticas, sequenciais e cronológicas para as
-próximas semanas, incluindo preparação comercial e validação dos parceiros.
+Inclua:
+- assunto curto;
+- saudação formal;
+- apresentação do exportador usando campos editáveis entre colchetes;
+- produto, volume disponível e proposta de valor;
+- convite para conversa, amostra ou envio de catálogo;
+- encerramento profissional.
 
-REGRAS CRÍTICAS ANTI-ALUCINAÇÃO:
-- Nunca invente empresas, organizações, contatos, e-mails, volumes,
-certificações, preços, tarifas, relações comerciais ou fontes.
-- Não inclua supermercados, varejistas, restaurantes, governos, associações
-ou empresas de máquinas e equipamentos quando não forem o perfil B2B adequado.
-- Trate toda empresa como potencial a validar, jamais como cliente confirmado.
-- Dados históricos de importação brasileira são somente contexto de mercado;
-nunca os apresente como tarifa vigente, demanda atual ou volume garantido no
-país-alvo.
-- Se não houver evidência pública suficiente, declare a limitação claramente.
+Não invente certificações, preços, prazos, contatos, compradores confirmados ou
+parcerias existentes. Quando não houver evidência suficiente, indique a limitação
+de forma clara.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
