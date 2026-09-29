@@ -98,9 +98,16 @@ REGRAS PARA LINKS:
   associações e empresas de máquinas/equipamentos quando não forem o parceiro
   B2B adequado ao produto.
 
-# 3. E-mail comercial inicial
+# E-MAIL_COMERCIAL
 
-Gere um e-mail B2B pronto para revisão no idioma principal de
+Retorne exatamente neste formato:
+
+ASSUNTO: [assunto no idioma do país-alvo]
+
+CORPO:
+[corpo completo do e-mail no idioma do país-alvo]
+
+Gere um e-mail B2B profissional, personalizado para produto, volume, país e perfil de parceiro. Use campos editáveis quando faltar dado, como [Nome da empresa], [Nome do contato] e [Assinatura]. Não escreva explicações fora desse bloco.
 {entrada.pais_alvo}.
 
 Formato obrigatório:
@@ -119,6 +126,8 @@ Formato obrigatório:
   amostra;
 - Encerramento profissional e assinatura editável:
   [Nome], [Cargo], [Empresa], [E-mail], [Telefone].
+
+  
 
 O texto deve ser direto, personalizado para o perfil
 {entrada.perfil_parceiro or "importador/distribuidor B2B"} e ter no máximo
