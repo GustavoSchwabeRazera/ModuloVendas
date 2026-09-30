@@ -18,6 +18,14 @@ class ErroProvedorIA(RuntimeError):
     pass
 
 
+def _carregar_json(texto: str):
+    """Aceita JSON puro e também a resposta que o modelo envolveu em Markdown."""
+    conteudo = texto.strip()
+    if conteudo.startswith("```"):
+        conteudo = conteudo.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    return json.loads(conteudo)
+
+
 def extrair_fontes(response) -> list[dict[str, str]]:
     """Retorna apenas fontes públicas do Google Search Grounding."""
     fontes: list[dict[str, str]] = []
@@ -93,14 +101,14 @@ REGRAS
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
-- No panorama, mantenha toda a inteligência relevante em texto contínuo, sem listas, tabelas, subtítulos ou rótulos internos.
+- O valor de `panorama_comercial` pode usar Markdown internamente. Estruture-o com os títulos `### Canais de entrada`, `### Inteligência e networking`, `### Tendências e requisitos`, `### Oportunidades e riscos` e `### Logística e documentação`, nessa ordem. Abaixo de cada título, escreva um parágrafo curto; não use listas nem tabelas.
 - O panorama precisa preservar a profundidade de um plano comercial completo. Em parágrafos distintos, cubra quando houver evidência: (1) principais canais de entrada B2B — distribuidores, importadores, atacadistas e trading companies; (2) feiras, câmaras e associações úteis para pesquisa ou networking; (3) notícias, tendências e mudanças regulatórias relevantes; (4) oportunidades e riscos; (5) cuidados logísticos, documentais e comerciais.
 - Ao mencionar feira, evento, câmara ou associação, use somente nome oficial completo e atual, no idioma local ou em inglês, e apenas se houver evidência pública. Se não houver, omita em vez de inventar.
 - Não omita uma informação relevante só porque o resultado será exibido em um único bloco de texto.
 
-RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
+RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor textual de `panorama_comercial` pode conter os títulos Markdown solicitados acima:
 {{
-  "panorama_comercial": "texto contínuo de 5 a 7 parágrafos, sem subtítulos internos, cobrindo em profundidade canais B2B, feiras/câmaras para networking, tendências, regras relevantes, oportunidades, riscos, logística e documentação",
+  "panorama_comercial": "### Canais de entrada\\nParágrafo...\\n\\n### Inteligência e networking\\nParágrafo...\\n\\n### Tendências e requisitos\\nParágrafo...\\n\\n### Oportunidades e riscos\\nParágrafo...\\n\\n### Logística e documentação\\nParágrafo...",
   "plano_acao_30_dias": {{
     "dias_1_7": ["2 a 4 ações objetivas"],
     "dias_8_14": ["2 a 4 ações objetivas"],
@@ -134,7 +142,7 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
             texto = getattr(response, "text", None)
             if texto:
                 try:
-                    conteudo = ConteudoComercial.model_validate(json.loads(texto))
+                    conteudo = ConteudoComercial.model_validate(_carregar_json(texto))
                 except (json.JSONDecodeError, ValueError) as exc:
                     raise ErroProvedorIA("A IA não retornou o formato comercial esperado.") from exc
                 return _montar_relatorio(conteudo), extrair_fontes(response), conteudo
@@ -179,9 +187,9 @@ REGRAS:
 
     client = genai.Client(api_key=settings.gemini_api_key)
     
-    # Configuramos a API para retornar estritamente JSON e forçamos o uso do Google Search
+    # O prompt exige JSON; sem response_mime_type aqui a pesquisa Google aceita
+    # respostas em bloco Markdown, que são normalizadas por _carregar_json.
     config = types.GenerateContentConfig(
-        response_mime_type="application/json",
         tools=[types.Tool(google_search=types.GoogleSearch())],
         temperature=0.2, # Temperatura baixa para focar em precisão e evitar alucinação
     )
@@ -196,7 +204,7 @@ REGRAS:
             texto_json = getattr(response, "text", None)
             if texto_json:
                 try:
-                    empresas_encontradas = json.loads(texto_json)
+                    empresas_encontradas = _carregar_json(texto_json)
                 except json.JSONDecodeError as json_err:
                     logger.error("Erro ao fazer o parse do JSON do Gemini: %s", json_err)
                     raise ErroProvedorIA("A resposta da IA não veio em um formato estruturado válido.")
