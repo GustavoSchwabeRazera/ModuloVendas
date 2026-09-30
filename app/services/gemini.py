@@ -79,6 +79,8 @@ def extrair_leads_sugeridos(conteudo: ConteudoComercial) -> tuple[list[LeadPoten
                 site=site,
                 fonte="Gemini + Google Search",
                 justificativa_validacao=empresa.justificativa,
+                nivel_cobertura=empresa.nivel_cobertura,
+                mercado_atendido=empresa.mercado_atendido,
             )
         )
     aviso = None if leads else "Nenhuma empresa com domínio oficial confiável foi sugerida nesta consulta."
@@ -118,8 +120,9 @@ REGRAS
 - Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
 - Dados históricos brasileiros são somente contexto, nunca demanda atual, tarifa ou regra do país-alvo.
 - Feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces e órgãos públicos podem ser mencionados apenas como fontes de inteligência, canais de acesso ou locais de networking; nunca como compradores.
-- Sugira de três a cinco empresas somente no campo `empresas_sugeridas` do JSON, sempre que houver evidência pública. Cada uma deve ser importador, distribuidor, atacadista, trading company ou fornecedor B2B do segmento; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
-- Priorize empresas sediadas no país-alvo. Em mercados pequenos, quando não houver três empresas locais verificáveis, inclua distribuidores regionais do Caribe ou da América do Sul que tenham evidência pública de atender, exportar para ou operar no país-alvo. Explique essa relação na justificativa.
+- Sugira de três a cinco empresas somente no campo `empresas_sugeridas`, sempre que houver evidência pública. Cada uma deve ser importador, distribuidor, atacadista, trading company ou fornecedor B2B do segmento; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
+- Classifique cada empresa: `LOCAL` se houver evidência pública de sede ou operação no país-alvo; `REGIONAL` somente quando for distribuidor do Caribe ou América do Sul com atuação regional comprovada, mas sem confirmação específica de operação no país-alvo. Priorize LOCAL.
+- Em mercados pequenos, quando não houver três empresas locais verificáveis, inclua candidatas REGIONAIS. Na justificativa, explique a evidência de cobertura regional. Nunca diga que uma empresa REGIONAL compra ou opera no país-alvo sem prova.
 - Para cada empresa sugerida, use somente um domínio oficial encontrado na pesquisa. Não adivinhe URLs. Retorne lista vazia apenas se não houver nenhuma empresa com domínio oficial confiável, mesmo após considerar atuação regional comprovada.
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
@@ -143,7 +146,7 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor tex
     "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
   }},
   "empresas_sugeridas": [
-    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example"}}
+    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example", "nivel_cobertura": "LOCAL ou REGIONAL", "mercado_atendido": "País-alvo ou região comprovada"}}
   ]
 }}
 """.strip()

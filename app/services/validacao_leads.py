@@ -168,17 +168,24 @@ Não invente fatos, certificados, compras ou relações comerciais.
             status = "NAO_CONFIRMADA"
         justificativa = avaliacao.get("justificativa")
         evidencia_url = avaliacao.get("evidencia_url")
-        if status != "ADERENTE":
+        # Um parceiro regional pode não ter evidência pública específica no país-alvo,
+        # mas ainda é útil como sugestão claramente identificada para confirmação manual.
+        manter_regional = lead.nivel_cobertura == "REGIONAL" and status == "NAO_CONFIRMADA"
+        if status != "ADERENTE" and not manter_regional:
             ocultados += 1
             continue
         atualizados.append(
             lead.model_copy(
                 update={
-                    "status": "aderente validado",
+                    "status": "aderente validado" if status == "ADERENTE" else "parceiro regional a validar",
                     "validacao_produto": status,
-                    "justificativa_validacao": str(justificativa)[:240] if justificativa else None,
+                    "justificativa_validacao": (
+                        str(justificativa)[:240]
+                        if justificativa
+                        else lead.justificativa_validacao
+                    ),
                     "evidencia_url": str(evidencia_url) if evidencia_url else None,
-                    "apto_para_abordagem": True,
+                    "apto_para_abordagem": status == "ADERENTE",
                 }
             )
         )

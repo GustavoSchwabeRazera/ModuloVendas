@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -85,6 +86,8 @@ class LeadPotencial(BaseModel):
     # Só é exibido como link oficial depois de a verificação HTTP confirmar o domínio.
     site_validado: bool = False
     motivo_validacao_site: str | None = None
+    nivel_cobertura: Literal["LOCAL", "REGIONAL"] = "LOCAL"
+    mercado_atendido: str | None = None
 
 
 class PlanoAcao30Dias(BaseModel):
@@ -103,6 +106,8 @@ class EmpresaSugerida(BaseModel):
     nome: str = Field(min_length=2, max_length=240)
     justificativa: str = Field(min_length=10, max_length=400)
     site: str = Field(min_length=12, max_length=500)
+    nivel_cobertura: Literal["LOCAL", "REGIONAL"]
+    mercado_atendido: str = Field(min_length=2, max_length=160)
 
 
 class ConteudoComercial(BaseModel):
