@@ -240,6 +240,7 @@ REGRAS:
         temperature=0.2, # Temperatura baixa para focar em precisão e evitar alucinação
     )
 
+    ultimo_erro: Exception | None = None
     for tentativa in range(3):
         try:
             response = client.models.generate_content(
@@ -282,11 +283,20 @@ REGRAS:
             
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
-            logger.warning("Falha no Gemini (Busca de Empresas), tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
+            ultimo_erro = exc
+            logger.warning(
+                "Falha no Gemini (Busca de Empresas), tentativa %s/3: %s: %s",
+                tentativa + 1,
+                type(exc).__name__,
+                str(exc),
+            )
             if tentativa == 2:
-                raise ErroProvedorIA("Não foi possível buscar empresas potenciais agora.") from exc
+                detalhe = f"{type(exc).__name__}: {str(exc)[:220]}"
+                raise ErroProvedorIA(f"Não foi possível buscar empresas potenciais agora ({detalhe}).") from exc
             time.sleep(2 ** tentativa)
 
+    if ultimo_erro:
+        raise ErroProvedorIA(f"Não foi possível buscar empresas potenciais agora ({type(ultimo_erro).__name__}).")
     raise ErroProvedorIA("Não foi possível buscar empresas potenciais agora.")
 
 
