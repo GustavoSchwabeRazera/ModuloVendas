@@ -6,7 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.schemas import CriarProspeccaoRequest, HealthResponse, ProspeccaoResponse
 from app.services.dados_tarifarios import buscar_contexto_tarifario
-from app.services.gemini import ErroProvedorIA, extrair_leads_sugeridos, gerar_prospeccao
+from app.services.gemini import (
+    ErroProvedorIA,
+    buscar_empresas_potenciais,
+    extrair_leads_sugeridos,
+    gerar_prospeccao,
+)
 from app.services.validacao_leads import validar_sites_oficiais
 
 settings = get_settings()
@@ -39,6 +44,14 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     leads, aviso = extrair_leads_sugeridos(conteudo_comercial)
+    # Alguns modelos priorizam o plano e omitem empresas no JSON principal. Nesse
+    # caso fazemos uma única busca complementar, sem reintroduzir o Hunter.
+    if not leads:
+        try:
+            leads, aviso_complementar = buscar_empresas_potenciais(entrada, settings)
+            aviso = None if leads else (aviso_complementar or aviso)
+        except ErroProvedorIA:
+            aviso = "Nenhuma empresa com domínio oficial confiável foi sugerida nesta consulta."
     leads, aviso_site = validar_sites_oficiais(leads)
     avisos = (aviso_tarifario, aviso, aviso_site)
     return ProspeccaoResponse(
