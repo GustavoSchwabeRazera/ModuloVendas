@@ -88,15 +88,17 @@ CONTEXTO
 REGRAS
 - Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
 - Dados históricos brasileiros são somente contexto, nunca demanda atual, tarifa ou regra do país-alvo.
-- Não cite feiras, eventos, associações, diretórios, marketplaces ou órgãos públicos como compradores.
+- Feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces e órgãos públicos podem ser mencionados apenas como fontes de inteligência, canais de acesso ou locais de networking; nunca como compradores.
 - Não informe empresas, contatos ou links: compradores são pesquisados e validados pelo servidor separadamente.
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
+- No panorama, mantenha toda a inteligência relevante em texto contínuo, sem listas, tabelas, subtítulos ou rótulos internos.
+- O panorama precisa incluir, quando houver evidência: perfil e canais de entrada B2B (importadores, distribuidores, atacadistas e trading companies); tendências ou notícias setoriais; requisitos comerciais, logísticos e regulatórios; oportunidades e riscos; e feiras/câmaras/associações úteis para pesquisa ou networking. Não omita esses pontos só porque serão exibidos em um único bloco.
 
 RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
 {{
-  "panorama_comercial": "texto contínuo de 2 a 4 parágrafos, sem subtítulos internos",
+  "panorama_comercial": "texto contínuo de 4 a 6 parágrafos, sem subtítulos internos, cobrindo canais B2B, tendências, requisitos, oportunidades, riscos e fontes de networking relevantes",
   "plano_acao_30_dias": {{
     "dias_1_7": ["2 a 4 ações objetivas"],
     "dias_8_14": ["2 a 4 ações objetivas"],
