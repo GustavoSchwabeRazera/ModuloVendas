@@ -87,12 +87,31 @@ class LeadPotencial(BaseModel):
     motivo_validacao_site: str | None = None
 
 
+class PlanoAcao30Dias(BaseModel):
+    dias_1_7: list[str] = Field(min_length=2, max_length=4)
+    dias_8_14: list[str] = Field(min_length=2, max_length=4)
+    dias_15_21: list[str] = Field(min_length=2, max_length=4)
+    dias_22_30: list[str] = Field(min_length=2, max_length=4)
+
+
+class EmailComercial(BaseModel):
+    assunto: str = Field(min_length=3, max_length=240)
+    corpo: str = Field(min_length=20, max_length=8_000)
+
+
+class ConteudoComercial(BaseModel):
+    panorama_comercial: str = Field(min_length=80, max_length=8_000)
+    plano_acao_30_dias: PlanoAcao30Dias
+    email_comercial: EmailComercial
+
+
 class ProspeccaoResponse(BaseModel):
     status: str = "sucesso"
     relatorio: str
     contexto_tarifario: ContextoTarifario | None = None
     fontes: list[FontePesquisa] = Field(default_factory=list)
     leads: list[LeadPotencial] = Field(default_factory=list)
+    conteudo_comercial: ConteudoComercial | None = None
     aviso: str | None = None
 
 

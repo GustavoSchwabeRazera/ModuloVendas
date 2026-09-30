@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.schemas import ContextoTarifario, CriarProspeccaoRequest
+from app.schemas import ConteudoComercial, ContextoTarifario, CriarProspeccaoRequest
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +33,35 @@ def extrair_fontes(response) -> list[dict[str, str]]:
     return fontes[:12]
 
 
+def _montar_relatorio(conteudo: ConteudoComercial) -> str:
+    """Mantém o Markdown esperado pelo front atual durante a migração para JSON."""
+    plano = conteudo.plano_acao_30_dias
+    etapas = (
+        ("Dias 1–7", plano.dias_1_7),
+        ("Dias 8–14", plano.dias_8_14),
+        ("Dias 15–21", plano.dias_15_21),
+        ("Dias 22–30", plano.dias_22_30),
+    )
+    plano_markdown = "\n\n".join(
+        f"## {titulo}\n" + "\n".join(f"- {item}" for item in itens)
+        for titulo, itens in etapas
+    )
+    return (
+        f"# PANORAMA_COMERCIAL\n{conteudo.panorama_comercial}\n\n"
+        "# COMPRADORES_POTENCIAIS\nConsulte os compradores validados exibidos abaixo.\n\n"
+        f"# PLANO_DE_ACAO_30_DIAS\n{plano_markdown}\n\n"
+        "# E-MAIL_COMERCIAL\n"
+        f"ASSUNTO: {conteudo.email_comercial.assunto}\n"
+        f"CORPO:\n{conteudo.email_comercial.corpo}"
+    )
+
+
 def gerar_prospeccao(
     entrada: CriarProspeccaoRequest,
     settings: Settings,
     contexto_tarifario: ContextoTarifario | None = None,
-) -> tuple[str, list[dict[str, str]]]:
-    """Gera o plano comercial em Markdown (Tópicos 1 ao 6)."""
+) -> tuple[str, list[dict[str, str]], ConteudoComercial]:
+    """Gera conteúdo estruturado para evitar seções misturadas ou e-mail vazio."""
     if not settings.gemini_api_key:
         raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
 
@@ -51,83 +74,51 @@ def gerar_prospeccao(
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
     
     prompt = f"""
-Você é um especialista em comércio exterior e vendas B2B internacionais.
+Você é um especialista sênior em comércio exterior e vendas B2B internacionais.
 
-Crie uma análise comercial acionável, responsável e objetiva para:
-
+CONTEXTO
 - Produto: {entrada.nome_produto}
 - Código HS6/NCM: {codigo}
 - País-alvo: {entrada.pais_alvo}
 - Disponibilidade: {entrada.disponibilidade or 'não informada'}
-- Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
-- Contexto: {origem}
-- Dados históricos de importação brasileira: {dados_tarifarios}
+- Perfil de parceiro: {entrada.perfil_parceiro or 'a definir'}
+- Contexto de origem: {origem}
+- Dados históricos brasileiros: {dados_tarifarios}
 
-REGRAS CRÍTICAS
+REGRAS
+- Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
+- Dados históricos brasileiros são somente contexto, nunca demanda atual, tarifa ou regra do país-alvo.
+- Não cite feiras, eventos, associações, diretórios, marketplaces ou órgãos públicos como compradores.
+- Não informe empresas, contatos ou links: compradores são pesquisados e validados pelo servidor separadamente.
+- Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
+- Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
+- O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
 
-- Baseie-se somente em informações verificáveis.
-- Nunca invente empresas, organizações, feiras, eventos, contatos, certificações, exigências, volumes, preços ou URLs.
-- Não trate dados históricos de importação brasileira como tarifa, regra aduaneira, demanda atual ou volume garantido no país-alvo.
-- Não apresente feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces ou órgãos públicos como compradores potenciais.
-- Não liste nomes de empresas, contatos ou links. Os compradores serão apresentados separadamente pelo sistema somente após validação do domínio, da identidade da empresa e da aderência ao produto.
-- Caso uma informação regulatória ou comercial exija confirmação, escreva: “Validar com o importador ou órgão competente”.
-- Não use os títulos “Canais de entrada”, “Riscos”, “Oportunidades”, “Requisitos regulatórios” ou “Fontes públicas consultadas”.
-
-Retorne exatamente estas seções Markdown:
-
-# PANORAMA_COMERCIAL
-
-Escreva um texto único, com 2 a 4 parágrafos conectados e sem subtítulos internos.
-
-Aborde adequação do produto ao país, perfil de comprador B2B mais apropriado, estratégia de entrada, pontos logísticos e regulatórios essenciais, oportunidade comercial e cuidados necessários. Seja específico para o produto, país e disponibilidade informados.
-
-# COMPRADORES_POTENCIAIS
-
-Escreva apenas:
-
-“Consulte os compradores validados exibidos abaixo. Os resultados passam por verificação de disponibilidade do site, coerência entre domínio e empresa e aderência pública ao produto.”
-
-# PLANO_DE_ACAO_30_DIAS
-
-## Dias 1–7
-- Liste de 2 a 4 ações de preparação comercial e documental.
-
-## Dias 8–14
-- Liste de 2 a 4 ações de validação técnica, regulatória e priorização de compradores.
-
-## Dias 15–21
-- Liste de 2 a 4 ações de abordagem B2B, apresentação comercial e acompanhamento.
-
-## Dias 22–30
-- Liste de 2 a 4 ações de reuniões, amostras, proposta comercial e definição dos próximos passos.
-
-# E-MAIL_COMERCIAL
-
-Crie um e-mail de prospecção profissional no idioma comercial predominante do país-alvo.
-
-ASSUNTO: [assunto curto e comercial]
-
-CORPO:
-[Saudação]
-
-[Apresente o produto e a disponibilidade sem prometer informações não fornecidas.]
-
-[Convide o comprador para conhecer catálogo, especificações, amostras ou uma conversa.]
-
-[Encerramento profissional]
-
-[Nome da empresa]
-[Nome do responsável]
-
-Não mencione IA e não invente destinatário, nome de empresa, e-mail ou telefone.
+RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
+{{
+  "panorama_comercial": "texto contínuo de 2 a 4 parágrafos, sem subtítulos internos",
+  "plano_acao_30_dias": {{
+    "dias_1_7": ["2 a 4 ações objetivas"],
+    "dias_8_14": ["2 a 4 ações objetivas"],
+    "dias_15_21": ["2 a 4 ações objetivas"],
+    "dias_22_30": ["2 a 4 ações objetivas"]
+  }},
+  "email_comercial": {{
+    "assunto": "assunto comercial curto",
+    "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
+  }}
+}}
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
-    config = None
     if settings.exportai_pesquisa_web_ativa:
         config = types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())]
+            response_mime_type="application/json",
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+            temperature=0.2,
         )
+    else:
+        config = types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2)
 
     for tentativa in range(3):
         try:
@@ -138,7 +129,11 @@ Não mencione IA e não invente destinatário, nome de empresa, e-mail ou telefo
             )
             texto = getattr(response, "text", None)
             if texto:
-                return texto, extrair_fontes(response)
+                try:
+                    conteudo = ConteudoComercial.model_validate(json.loads(texto))
+                except (json.JSONDecodeError, ValueError) as exc:
+                    raise ErroProvedorIA("A IA não retornou o formato comercial esperado.") from exc
+                return _montar_relatorio(conteudo), extrair_fontes(response), conteudo
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
             logger.warning("Falha no Gemini (Plano Comercial), tentativa %s/3: %s", tentativa + 1, type(exc).__name__)

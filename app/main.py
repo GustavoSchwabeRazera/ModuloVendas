@@ -36,7 +36,7 @@ def health() -> HealthResponse:
 def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
     contexto_tarifario, aviso_tarifario = buscar_contexto_tarifario(entrada, settings)
     try:
-        relatorio, fontes = gerar_prospeccao(entrada, settings, contexto_tarifario)
+        relatorio, fontes, conteudo_comercial = gerar_prospeccao(entrada, settings, contexto_tarifario)
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     leads, aviso = buscar_leads(entrada, settings)
@@ -48,5 +48,6 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
         fontes=fontes,
         leads=leads,
         contexto_tarifario=contexto_tarifario,
+        conteudo_comercial=conteudo_comercial,
         aviso=" ".join(item for item in avisos if item) or None,
     )
