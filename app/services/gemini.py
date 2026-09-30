@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import time
+from urllib.parse import urlparse
 
 from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.schemas import ConteudoComercial, ContextoTarifario, CriarProspeccaoRequest
+from app.schemas import ConteudoComercial, ContextoTarifario, CriarProspeccaoRequest, LeadPotencial
 
 logger = logging.getLogger(__name__)
 
@@ -150,32 +151,30 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
 def buscar_empresas_potenciais(
     entrada: CriarProspeccaoRequest,
     settings: Settings,
-) -> list[dict]:
-    """
-    Substitui o Hunter.io. Retorna um array de dicionários (JSON) com 4 empresas reais 
-    para o front-end renderizar os quadrados (cards) de validação de mercado.
-    """
+) -> tuple[list[LeadPotencial], str | None]:
+    """Pesquisa candidatos via Gemini; os links ainda passam por teste HTTP no servidor."""
     if not settings.gemini_api_key:
         raise ErroProvedorIA("GEMINI_API_KEY não está configurada no servidor.")
 
     prompt_empresas = f"""
-Aja como um pesquisador de mercado B2B de alto nível.
-Busque 4 empresas REAIS e ativas no país '{entrada.pais_alvo}' que atuem como {entrada.perfil_parceiro or 'importadores/distribuidores'} do produto '{entrada.nome_produto}'.
+ Aja como um pesquisador de mercado B2B de alto nível.
+ Pesquise de 1 a 5 empresas REAIS e ativas no país '{entrada.pais_alvo}' que atuem como {entrada.perfil_parceiro or 'importadores/distribuidores'} do produto ou categoria '{entrada.nome_produto}'.
 
-Sua resposta deve ser EXATAMENTE um array JSON contendo 4 objetos. Não adicione textos antes ou depois.
+Sua resposta deve ser EXATAMENTE um array JSON. Não adicione textos antes ou depois.
 Estrutura obrigatória de cada objeto:
 {{
-    "nome_empresa": "Nome oficial da empresa",
+    "nome": "Nome oficial da empresa",
     "perfil_parceiro": "Ex: Distribuidor B2B / Atacadista (em português)",
-    "justificativa": "Por que faz sentido prospectar esta empresa (1 frase curta, em português)",
-    "site": "URL oficial completa (certifique-se da validade ou retorne null)",
-    "email_contato": "E-mail de contato público geral, ex: info@, sales@ (se não encontrar na web, retorne null obrigatoriamente. NUNCA invente e-mails)"
+    "justificativa": "Por que faz sentido prospectar esta empresa (uma frase factual em português)",
+    "site": "https://dominio-oficial.exemplo"
 }}
 
 REGRAS:
-1. USE A PESQUISA WEB para confirmar que as empresas e os sites são reais e pertencem a {entrada.pais_alvo}.
-2. Se não tiver certeza absoluta do site ou do e-mail, coloque null.
-3. Não use blocos de código Markdown (` ```json `), devolva apenas o JSON puro.
+1. USE A PESQUISA WEB para confirmar empresa, atuação B2B e domínio oficial.
+2. Não inclua feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
+3. Não adivinhe domínios. Se não houver URL oficial confiável, não inclua a empresa.
+4. Não gere e-mails, telefones ou dados de contato.
+5. Priorize precisão sobre quantidade; retorne [] se não houver candidatos confiáveis.
 """
 
     client = genai.Client(api_key=settings.gemini_api_key)
@@ -195,15 +194,35 @@ REGRAS:
                 config=config,
             )
             texto_json = getattr(response, "text", None)
-            
             if texto_json:
                 try:
-                    # Faz o parse da string devolvida pela IA para um objeto Python nativo
                     empresas_encontradas = json.loads(texto_json)
-                    return empresas_encontradas
                 except json.JSONDecodeError as json_err:
                     logger.error("Erro ao fazer o parse do JSON do Gemini: %s", json_err)
                     raise ErroProvedorIA("A resposta da IA não veio em um formato estruturado válido.")
+                if not isinstance(empresas_encontradas, list):
+                    raise ErroProvedorIA("A resposta da IA não trouxe uma lista de empresas.")
+
+                leads: list[LeadPotencial] = []
+                for empresa in empresas_encontradas[:5]:
+                    if not isinstance(empresa, dict):
+                        continue
+                    nome = str(empresa.get("nome") or "").strip()
+                    site = str(empresa.get("site") or "").strip()
+                    dominio = (urlparse(site).hostname or "").lower().removeprefix("www.")
+                    if not nome or not dominio or not site.startswith(("https://", "http://")):
+                        continue
+                    leads.append(
+                        LeadPotencial(
+                            nome=nome,
+                            dominio=dominio,
+                            site=site,
+                            fonte="Gemini + Google Search",
+                            justificativa_validacao=str(empresa.get("justificativa") or "")[:240] or None,
+                        )
+                    )
+                aviso = None if leads else "A pesquisa não encontrou empresas com domínio oficial confiável."
+                return leads, aviso
             
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
