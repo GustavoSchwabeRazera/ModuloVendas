@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +8,6 @@ from app.schemas import CriarProspeccaoRequest, HealthResponse, ProspeccaoRespon
 from app.services.dados_tarifarios import buscar_contexto_tarifario
 from app.services.gemini import (
     ErroProvedorIA,
-    buscar_empresas_potenciais,
     extrair_leads_sugeridos,
     gerar_prospeccao,
 )
@@ -18,7 +15,6 @@ from app.services.validacao_leads import validar_sites_oficiais
 
 settings = get_settings()
 app = FastAPI(title="ExportAI - Módulo Vendas", version="1.0.0")
-logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,15 +43,6 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     leads, aviso = extrair_leads_sugeridos(conteudo_comercial)
-    # Alguns modelos priorizam o plano e omitem empresas no JSON principal. Nesse
-    # caso fazemos uma única busca complementar, sem reintroduzir o Hunter.
-    if not leads:
-        try:
-            leads, aviso_complementar = buscar_empresas_potenciais(entrada, settings)
-            aviso = None if leads else (aviso_complementar or aviso)
-        except ErroProvedorIA as exc:
-            logger.warning("Busca complementar de empresas falhou: %s", exc)
-            aviso = f"A busca complementar de empresas falhou: {exc}"
     leads, aviso_site = validar_sites_oficiais(leads)
     avisos = (aviso_tarifario, aviso, aviso_site)
     return ProspeccaoResponse(
