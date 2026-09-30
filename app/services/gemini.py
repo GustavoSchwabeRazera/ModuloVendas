@@ -118,8 +118,9 @@ REGRAS
 - Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
 - Dados históricos brasileiros são somente contexto, nunca demanda atual, tarifa ou regra do país-alvo.
 - Feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces e órgãos públicos podem ser mencionados apenas como fontes de inteligência, canais de acesso ou locais de networking; nunca como compradores.
-- Sugira no máximo cinco empresas somente no campo `empresas_sugeridas` do JSON. Cada uma deve ser importador, distribuidor, atacadista ou trading company; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
-- Para cada empresa sugerida, use somente um domínio oficial encontrado na pesquisa. Não adivinhe URLs. Caso não haja empresa e domínio confiáveis, retorne uma lista vazia.
+- Sugira de três a cinco empresas somente no campo `empresas_sugeridas` do JSON, sempre que houver evidência pública. Cada uma deve ser importador, distribuidor, atacadista, trading company ou fornecedor B2B do segmento; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
+- Priorize empresas sediadas no país-alvo. Em mercados pequenos, quando não houver três empresas locais verificáveis, inclua distribuidores regionais do Caribe ou da América do Sul que tenham evidência pública de atender, exportar para ou operar no país-alvo. Explique essa relação na justificativa.
+- Para cada empresa sugerida, use somente um domínio oficial encontrado na pesquisa. Não adivinhe URLs. Retorne lista vazia apenas se não houver nenhuma empresa com domínio oficial confiável, mesmo após considerar atuação regional comprovada.
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
