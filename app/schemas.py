@@ -105,7 +105,7 @@ class EmailComercial(BaseModel):
 class EmpresaSugerida(BaseModel):
     nome: str = Field(min_length=2, max_length=240)
     justificativa: str = Field(min_length=10, max_length=400)
-    site: str = Field(min_length=12, max_length=500)
+    site: str | None = Field(default=None, max_length=500)
     nivel_cobertura: Literal["LOCAL", "REGIONAL"]
     mercado_atendido: str = Field(min_length=2, max_length=160)
 

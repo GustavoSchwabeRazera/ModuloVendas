@@ -29,14 +29,23 @@ def _normalizar_texto(valor: str) -> str:
 
 
 def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotencial], str | None]:
-    """Testa site, redirecionamento e coerência do nome antes da resposta."""
-    validados: list[LeadPotencial] = []
-    rejeitados = 0
+    """Testa links sem ocultar empresas sugeridas pelo modelo."""
+    resultados: list[LeadPotencial] = []
+    nao_verificados = 0
     for lead in leads:
         termos_nome = set(_normalizar_texto(lead.nome).split())
         termos_dominio = set(_normalizar_texto(lead.dominio).split())
         if termos_nome & _TERMOS_NAO_COMPRADORES or termos_dominio & _TERMOS_NAO_COMPRADORES:
-            rejeitados += 1
+            continue
+        if not lead.site:
+            nao_verificados += 1
+            resultados.append(
+                lead.model_copy(update={
+                    "status": "site não informado",
+                    "site_validado": False,
+                    "motivo_validacao_site": "A empresa foi sugerida sem URL oficial confirmada.",
+                })
+            )
             continue
         try:
             resposta = requests.get(
@@ -48,9 +57,16 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
             # 401/403 são comuns em sites reais protegidos contra robôs. O navegador
             # ainda pode acessar essas páginas, portanto não descartamos o card.
             if not (200 <= resposta.status_code < 400 or resposta.status_code in {401, 403}):
-                rejeitados += 1
+                nao_verificados += 1
+                resultados.append(
+                    lead.model_copy(update={
+                        "status": "site não verificado",
+                        "site_validado": False,
+                        "motivo_validacao_site": "O link não respondeu com uma página disponível.",
+                    })
+                )
                 continue
-            validados.append(
+            resultados.append(
                 lead.model_copy(update={
                     "site": resposta.url,
                     "site_validado": True,
@@ -59,15 +75,21 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
                 })
             )
         except requests.RequestException:
-            rejeitados += 1
+            nao_verificados += 1
+            resultados.append(
+                lead.model_copy(update={
+                    "status": "site não verificado",
+                    "site_validado": False,
+                    "motivo_validacao_site": "O servidor não conseguiu acessar o link informado.",
+                })
+            )
 
     aviso = None
-    if rejeitados:
+    if nao_verificados:
         aviso = (
-            f"{rejeitados} resultado(s) foram ocultados porque o servidor não conseguiu "
-            "acessar o link informado."
+            f"{nao_verificados} empresa(s) foram mantidas como sugestão, mas têm link não verificado."
         )
-    return validados, aviso
+    return resultados, aviso
 
 
 def _extrair_json(texto: str) -> list[dict[str, Any]]:

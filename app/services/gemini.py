@@ -85,10 +85,8 @@ def extrair_leads_sugeridos(conteudo: ConteudoComercial) -> tuple[list[LeadPoten
     """Converte sugestões da mesma resposta do Gemini em candidatos a cards."""
     leads: list[LeadPotencial] = []
     for empresa in conteudo.empresas_sugeridas:
-        site = _normalizar_site(empresa.site)
+        site = _normalizar_site(empresa.site or "")
         dominio = (urlparse(site).hostname or "").lower().removeprefix("www.")
-        if not dominio or not site.startswith(("https://", "http://")):
-            continue
         leads.append(
             LeadPotencial(
                 nome=empresa.nome,
@@ -140,7 +138,7 @@ REGRAS
 - Sugira de três a cinco empresas somente no campo `empresas_sugeridas`, sempre que houver evidência pública. Cada uma deve ser importador, distribuidor, atacadista, trading company ou fornecedor B2B conectado ao produto, à categoria ou ao HS6/NCM informado; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
 - Classifique cada empresa: `LOCAL` se houver evidência pública de sede ou operação no país-alvo; `REGIONAL` somente quando for distribuidor do Caribe ou América do Sul com atuação regional comprovada, mas sem confirmação específica de operação no país-alvo. Priorize LOCAL.
 - Em mercados pequenos, quando não houver três empresas locais verificáveis, inclua candidatas REGIONAIS. Na justificativa, explique a evidência de cobertura regional. Nunca diga que uma empresa REGIONAL compra ou opera no país-alvo sem prova.
-- Para cada empresa sugerida, use somente um domínio oficial encontrado na pesquisa. Não adivinhe URLs. Retorne lista vazia apenas se não houver nenhuma empresa com domínio oficial confiável, mesmo após considerar atuação regional comprovada.
+- Para cada empresa sugerida, use um domínio oficial encontrado na pesquisa quando houver. Não adivinhe URLs. Quando houver empresa real e aderente, mas sem URL oficial confiável, mantenha a empresa e retorne `site` como `null`; ela será exibida como sugestão sem link verificado.
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
@@ -163,7 +161,7 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor tex
     "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
   }},
   "empresas_sugeridas": [
-    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example", "nivel_cobertura": "LOCAL ou REGIONAL", "mercado_atendido": "País-alvo ou região comprovada"}}
+    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example ou null", "nivel_cobertura": "LOCAL ou REGIONAL", "mercado_atendido": "País-alvo ou região comprovada"}}
   ]
 }}
 """.strip()
