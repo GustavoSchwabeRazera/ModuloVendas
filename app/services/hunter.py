@@ -25,7 +25,8 @@ def buscar_leads(
     # produto foi informado em português pelo usuário.
     consulta = (
         f"B2B importers, distributors or wholesalers that source, sell or distribute "
-        f"{entrada.nome_produto} in {entrada.pais_alvo}."
+        f"{entrada.nome_produto} in {entrada.pais_alvo}. Exclude trade fairs, events, "
+        "associations, directories, marketplaces and government organizations."
     )
     try:
         response = requests.post(

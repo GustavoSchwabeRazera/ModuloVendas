@@ -51,67 +51,75 @@ def gerar_prospeccao(
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
     
     prompt = f"""
-Atue como especialista sênior em comércio exterior e prospecção B2B internacional.
+Você é um especialista em comércio exterior e vendas B2B internacionais.
 
-Crie uma análise comercial objetiva, atual e responsável para exportar o produto informado. Use somente informações verificáveis. Não invente empresas, contatos, e-mails, links, certificações, exigências, volumes, preços ou dados de mercado. Quando houver incerteza, indique que a validação é necessária.
+Crie uma análise comercial acionável, responsável e objetiva para:
 
-CONTEXTO DA OPERAÇÃO
-- Produto: {produto}
-- HS6: {hs6 or "não informado"}
-- NCM: {ncm or "não informado"}
-- País-alvo: {pais}
-- Quantidade disponível: {volume}
-- Perfil de comprador: {perfil}
-- Contexto recebido: {dados_historicos or "não informado"}
+- Produto: {entrada.nome_produto}
+- Código HS6/NCM: {codigo}
+- País-alvo: {entrada.pais_alvo}
+- Disponibilidade: {entrada.disponibilidade or 'não informada'}
+- Perfil de parceiro procurado: {entrada.perfil_parceiro or 'a definir'}
+- Contexto: {origem}
+- Dados históricos de importação brasileira: {dados_tarifarios}
 
-Retorne exatamente nas seções abaixo, usando os títulos exatamente como escritos.
+REGRAS CRÍTICAS
+
+- Baseie-se somente em informações verificáveis.
+- Nunca invente empresas, organizações, feiras, eventos, contatos, certificações, exigências, volumes, preços ou URLs.
+- Não trate dados históricos de importação brasileira como tarifa, regra aduaneira, demanda atual ou volume garantido no país-alvo.
+- Não apresente feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces ou órgãos públicos como compradores potenciais.
+- Não liste nomes de empresas, contatos ou links. Os compradores serão apresentados separadamente pelo sistema somente após validação do domínio, da identidade da empresa e da aderência ao produto.
+- Caso uma informação regulatória ou comercial exija confirmação, escreva: “Validar com o importador ou órgão competente”.
+- Não use os títulos “Canais de entrada”, “Riscos”, “Oportunidades”, “Requisitos regulatórios” ou “Fontes públicas consultadas”.
+
+Retorne exatamente estas seções Markdown:
 
 # PANORAMA_COMERCIAL
-Escreva um texto único, em 2 a 4 parágrafos bem conectados, sem subtítulos internos.
-Explique a adequação do produto ao país, perfil de compradores B2B mais relevante, oportunidade comercial, cuidados logísticos e regulatórios essenciais. Não use os títulos “Canais de entrada”, “Riscos”, “Oportunidades”, “Requisitos regulatórios” ou “Fontes públicas consultadas”.
+
+Escreva um texto único, com 2 a 4 parágrafos conectados e sem subtítulos internos.
+
+Aborde adequação do produto ao país, perfil de comprador B2B mais apropriado, estratégia de entrada, pontos logísticos e regulatórios essenciais, oportunidade comercial e cuidados necessários. Seja específico para o produto, país e disponibilidade informados.
 
 # COMPRADORES_POTENCIAIS
-Liste apenas empresas reais quando houver evidência pública suficiente. Cada item deve conter:
-- Nome oficial;
-- Papel B2B;
-- Justificativa factual curta;
-- Link oficial no formato [Visitar site](URL), somente se o domínio for confirmado.
-Trate todas como “potencial a validar”. Nunca crie e-mails ou contatos. Caso não haja empresas verificáveis, escreva apenas: “Nenhum comprador com site oficial validado foi identificado nesta consulta.”
+
+Escreva apenas:
+
+“Consulte os compradores validados exibidos abaixo. Os resultados passam por verificação de disponibilidade do site, coerência entre domínio e empresa e aderência pública ao produto.”
 
 # PLANO_DE_ACAO_30_DIAS
-Crie um plano prático e específico para este produto, país e volume. Use estas quatro partes:
 
 ## Dias 1–7
-- 2 a 4 ações de preparação comercial e documental.
+- Liste de 2 a 4 ações de preparação comercial e documental.
 
 ## Dias 8–14
-- 2 a 4 ações de validação técnica, regulatória e priorização de compradores.
+- Liste de 2 a 4 ações de validação técnica, regulatória e priorização de compradores.
 
 ## Dias 15–21
-- 2 a 4 ações de abordagem B2B, envio de apresentação e follow-up.
+- Liste de 2 a 4 ações de abordagem B2B, apresentação comercial e acompanhamento.
 
 ## Dias 22–30
-- 2 a 4 ações de reuniões, amostras/proposta comercial e decisão dos próximos passos.
-
-Quando uma exigência depender de confirmação, escreva “validar com o importador ou órgão competente”.
+- Liste de 2 a 4 ações de reuniões, amostras, proposta comercial e definição dos próximos passos.
 
 # E-MAIL_COMERCIAL
-Gere um e-mail profissional pronto para edição, no idioma comercial predominante do país-alvo.
+
+Crie um e-mail de prospecção profissional no idioma comercial predominante do país-alvo.
 
 ASSUNTO: [assunto curto e comercial]
 
 CORPO:
 [Saudação]
 
-[Apresente o produto, disponibilidade e proposta de valor sem prometer algo não informado.]
+[Apresente o produto e a disponibilidade sem prometer informações não fornecidas.]
 
-[Convide para conversar, solicitar catálogo/especificações ou avaliar amostras.]
+[Convide o comprador para conhecer catálogo, especificações, amostras ou uma conversa.]
 
 [Encerramento profissional]
+
 [Nome da empresa]
 [Nome do responsável]
 
-O e-mail não deve mencionar que foi produzido por IA e não deve incluir contatos inventados.
+Não mencione IA e não invente destinatário, nome de empresa, e-mail ou telefone.
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)

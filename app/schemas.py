@@ -82,6 +82,9 @@ class LeadPotencial(BaseModel):
     justificativa_validacao: str | None = None
     evidencia_url: str | None = None
     apto_para_abordagem: bool = False
+    # Só é exibido como link oficial depois de a verificação HTTP confirmar o domínio.
+    site_validado: bool = False
+    motivo_validacao_site: str | None = None
 
 
 class ProspeccaoResponse(BaseModel):

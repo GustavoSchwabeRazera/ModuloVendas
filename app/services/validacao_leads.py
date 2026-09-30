@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
+from urllib.parse import urlparse
 
+import requests
 from google import genai
 from google.genai import types
 
@@ -11,6 +14,83 @@ from app.config import Settings
 from app.schemas import CriarProspeccaoRequest, LeadPotencial
 
 logger = logging.getLogger(__name__)
+
+_CABECALHOS_HTTP = {
+    "User-Agent": "ExportAI-LinkVerifier/1.0 (+https://exportai-modulo-vendas.lovable.app)",
+    "Accept": "text/html,application/xhtml+xml",
+}
+_TERMOS_NAO_COMPRADORES = {
+    "fair", "feira", "event", "evento", "exhibition", "exposicao",
+    "association", "associacao", "directory", "diretorio", "marketplace",
+}
+
+
+def _normalizar_texto(valor: str) -> str:
+    return re.sub(r"[^a-z0-9 ]", " ", valor.lower()).strip()
+
+
+def _dominio_compativel(dominio_esperado: str, url_final: str) -> bool:
+    host = (urlparse(url_final).hostname or "").lower().removeprefix("www.")
+    base = dominio_esperado.lower().removeprefix("www.")
+    return host == base or host.endswith(f".{base}")
+
+
+def _nome_coerente_com_pagina(nome: str, dominio: str, html: str) -> bool:
+    """Exige um sinal verificável de que o domínio pertence à organização."""
+    termos = [
+        termo for termo in _normalizar_texto(nome).split()
+        if len(termo) >= 4 and termo not in {"gmbh", "ltd", "llc", "inc", "group", "company"}
+    ]
+    if not termos:
+        return False
+    pagina = _normalizar_texto(f"{dominio} {html[:300_000]}")
+    return any(termo in pagina for termo in termos)
+
+
+def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotencial], str | None]:
+    """Testa site, redirecionamento e coerência do nome antes da resposta."""
+    validados: list[LeadPotencial] = []
+    rejeitados = 0
+    for lead in leads:
+        termos_nome = set(_normalizar_texto(lead.nome).split())
+        termos_dominio = set(_normalizar_texto(lead.dominio).split())
+        if termos_nome & _TERMOS_NAO_COMPRADORES or termos_dominio & _TERMOS_NAO_COMPRADORES:
+            rejeitados += 1
+            continue
+        try:
+            resposta = requests.get(
+                lead.site,
+                headers=_CABECALHOS_HTTP,
+                timeout=(4, 10),
+                allow_redirects=True,
+            )
+            if not (200 <= resposta.status_code < 400):
+                rejeitados += 1
+                continue
+            if not _dominio_compativel(lead.dominio, resposta.url):
+                rejeitados += 1
+                continue
+            tipo = (resposta.headers.get("content-type") or "").lower()
+            if "html" not in tipo or not _nome_coerente_com_pagina(lead.nome, lead.dominio, resposta.text):
+                rejeitados += 1
+                continue
+            validados.append(
+                lead.model_copy(update={
+                    "site": resposta.url,
+                    "site_validado": True,
+                    "motivo_validacao_site": "Domínio acessível e coerente com a empresa.",
+                })
+            )
+        except requests.RequestException:
+            rejeitados += 1
+
+    aviso = None
+    if rejeitados:
+        aviso = (
+            f"{rejeitados} resultado(s) foram ocultados por não terem site oficial "
+            "acessível e coerente com a empresa."
+        )
+    return validados, aviso
 
 
 def _extrair_json(texto: str) -> list[dict[str, Any]]:
@@ -80,6 +160,7 @@ Não invente fatos, certificados, compras ou relações comerciais.
         if isinstance(item, dict)
     }
     atualizados: list[LeadPotencial] = []
+    ocultados = 0
     for lead in leads:
         avaliacao = por_dominio.get(lead.dominio.lower(), {})
         status = str(avaliacao.get("validacao") or "NAO_CONFIRMADA").upper()
@@ -87,21 +168,24 @@ Não invente fatos, certificados, compras ou relações comerciais.
             status = "NAO_CONFIRMADA"
         justificativa = avaliacao.get("justificativa")
         evidencia_url = avaliacao.get("evidencia_url")
+        if status != "ADERENTE":
+            ocultados += 1
+            continue
         atualizados.append(
             lead.model_copy(
                 update={
-                    "status": (
-                        "aderente validado"
-                        if status == "ADERENTE"
-                        else "não aderente"
-                        if status == "NAO_ADERENTE"
-                        else "potencial a validar"
-                    ),
+                    "status": "aderente validado",
                     "validacao_produto": status,
                     "justificativa_validacao": str(justificativa)[:240] if justificativa else None,
                     "evidencia_url": str(evidencia_url) if evidencia_url else None,
-                    "apto_para_abordagem": status == "ADERENTE",
+                    "apto_para_abordagem": True,
                 }
             )
         )
-    return atualizados, None
+    aviso = None
+    if ocultados:
+        aviso = (
+            f"{ocultados} resultado(s) foram ocultados por não terem evidência pública "
+            "de aderência ao produto e ao perfil solicitado."
+        )
+    return atualizados, aviso
