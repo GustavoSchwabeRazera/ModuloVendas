@@ -23,7 +23,24 @@ def _carregar_json(texto: str):
     conteudo = texto.strip()
     if conteudo.startswith("```"):
         conteudo = conteudo.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-    return json.loads(conteudo)
+    try:
+        return json.loads(conteudo)
+    except json.JSONDecodeError:
+        # Alguns retornos de grounding acrescentam uma frase antes/depois do JSON.
+        inicio_array, fim_array = conteudo.find("["), conteudo.rfind("]")
+        inicio_objeto, fim_objeto = conteudo.find("{"), conteudo.rfind("}")
+        if inicio_array >= 0 and fim_array > inicio_array:
+            return json.loads(conteudo[inicio_array : fim_array + 1])
+        if inicio_objeto >= 0 and fim_objeto > inicio_objeto:
+            return json.loads(conteudo[inicio_objeto : fim_objeto + 1])
+        raise
+
+
+def _normalizar_site(site: str) -> str:
+    site = site.strip()
+    if site and not site.startswith(("https://", "http://")):
+        site = f"https://{site}"
+    return site
 
 
 def extrair_fontes(response) -> list[dict[str, str]]:
@@ -68,7 +85,7 @@ def extrair_leads_sugeridos(conteudo: ConteudoComercial) -> tuple[list[LeadPoten
     """Converte sugestões da mesma resposta do Gemini em candidatos a cards."""
     leads: list[LeadPotencial] = []
     for empresa in conteudo.empresas_sugeridas:
-        site = empresa.site.strip()
+        site = _normalizar_site(empresa.site)
         dominio = (urlparse(site).hostname or "").lower().removeprefix("www.")
         if not dominio or not site.startswith(("https://", "http://")):
             continue
@@ -244,8 +261,10 @@ REGRAS:
                 for empresa in empresas_encontradas[:5]:
                     if not isinstance(empresa, dict):
                         continue
-                    nome = str(empresa.get("nome") or "").strip()
-                    site = str(empresa.get("site") or "").strip()
+                    nome = str(empresa.get("nome") or empresa.get("nome_empresa") or "").strip()
+                    site = _normalizar_site(
+                        str(empresa.get("site") or empresa.get("url") or empresa.get("dominio") or "")
+                    )
                     dominio = (urlparse(site).hostname or "").lower().removeprefix("www.")
                     if not nome or not dominio or not site.startswith(("https://", "http://")):
                         continue
