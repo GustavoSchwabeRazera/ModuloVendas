@@ -64,6 +64,27 @@ def _montar_relatorio(conteudo: ConteudoComercial) -> str:
     )
 
 
+def extrair_leads_sugeridos(conteudo: ConteudoComercial) -> tuple[list[LeadPotencial], str | None]:
+    """Converte sugestões da mesma resposta do Gemini em candidatos a cards."""
+    leads: list[LeadPotencial] = []
+    for empresa in conteudo.empresas_sugeridas:
+        site = empresa.site.strip()
+        dominio = (urlparse(site).hostname or "").lower().removeprefix("www.")
+        if not dominio or not site.startswith(("https://", "http://")):
+            continue
+        leads.append(
+            LeadPotencial(
+                nome=empresa.nome,
+                dominio=dominio,
+                site=site,
+                fonte="Gemini + Google Search",
+                justificativa_validacao=empresa.justificativa,
+            )
+        )
+    aviso = None if leads else "Nenhuma empresa com domínio oficial confiável foi sugerida nesta consulta."
+    return leads, aviso
+
+
 def gerar_prospeccao(
     entrada: CriarProspeccaoRequest,
     settings: Settings,
@@ -97,7 +118,8 @@ REGRAS
 - Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
 - Dados históricos brasileiros são somente contexto, nunca demanda atual, tarifa ou regra do país-alvo.
 - Feiras, eventos, associações, câmaras de comércio, diretórios, marketplaces e órgãos públicos podem ser mencionados apenas como fontes de inteligência, canais de acesso ou locais de networking; nunca como compradores.
-- Não informe empresas, contatos ou links: compradores são pesquisados e validados pelo servidor separadamente.
+- Sugira no máximo cinco empresas somente no campo `empresas_sugeridas` do JSON. Cada uma deve ser importador, distribuidor, atacadista ou trading company; não use feiras, eventos, associações, câmaras, diretórios, marketplaces ou órgãos públicos.
+- Para cada empresa sugerida, use somente um domínio oficial encontrado na pesquisa. Não adivinhe URLs. Caso não haja empresa e domínio confiáveis, retorne uma lista vazia.
 - Não indique certificado fitossanitário para produto industrializado ou beneficiado sem evidência específica.
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
@@ -118,7 +140,10 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor tex
   "email_comercial": {{
     "assunto": "assunto comercial curto",
     "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
-  }}
+  }},
+  "empresas_sugeridas": [
+    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example"}}
+  ]
 }}
 """.strip()
 

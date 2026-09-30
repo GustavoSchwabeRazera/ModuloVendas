@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.schemas import CriarProspeccaoRequest, HealthResponse, ProspeccaoResponse
 from app.services.dados_tarifarios import buscar_contexto_tarifario
-from app.services.gemini import ErroProvedorIA, buscar_empresas_potenciais, gerar_prospeccao
+from app.services.gemini import ErroProvedorIA, extrair_leads_sugeridos, gerar_prospeccao
 from app.services.validacao_leads import validar_aderencia_produto, validar_sites_oficiais
 
 settings = get_settings()
@@ -38,10 +38,7 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
         relatorio, fontes, conteudo_comercial = gerar_prospeccao(entrada, settings, contexto_tarifario)
     except ErroProvedorIA as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    try:
-        leads, aviso = buscar_empresas_potenciais(entrada, settings)
-    except ErroProvedorIA as exc:
-        leads, aviso = [], str(exc)
+    leads, aviso = extrair_leads_sugeridos(conteudo_comercial)
     leads, aviso_site = validar_sites_oficiais(leads)
     leads, aviso_validacao = validar_aderencia_produto(entrada, leads, settings)
     avisos = (aviso_tarifario, aviso, aviso_site, aviso_validacao)

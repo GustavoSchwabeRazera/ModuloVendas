@@ -99,10 +99,17 @@ class EmailComercial(BaseModel):
     corpo: str = Field(min_length=20, max_length=8_000)
 
 
+class EmpresaSugerida(BaseModel):
+    nome: str = Field(min_length=2, max_length=240)
+    justificativa: str = Field(min_length=10, max_length=400)
+    site: str = Field(min_length=12, max_length=500)
+
+
 class ConteudoComercial(BaseModel):
     panorama_comercial: str = Field(min_length=80, max_length=8_000)
     plano_acao_30_dias: PlanoAcao30Dias
     email_comercial: EmailComercial
+    empresas_sugeridas: list[EmpresaSugerida] = Field(default_factory=list, max_length=5)
 
 
 class ProspeccaoResponse(BaseModel):
