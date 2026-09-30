@@ -4,7 +4,6 @@ import json
 import logging
 import re
 from typing import Any
-from urllib.parse import urlparse
 
 import requests
 from google import genai
@@ -29,12 +28,6 @@ def _normalizar_texto(valor: str) -> str:
     return re.sub(r"[^a-z0-9 ]", " ", valor.lower()).strip()
 
 
-def _dominio_compativel(dominio_esperado: str, url_final: str) -> bool:
-    host = (urlparse(url_final).hostname or "").lower().removeprefix("www.")
-    base = dominio_esperado.lower().removeprefix("www.")
-    return host == base or host.endswith(f".{base}")
-
-
 def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotencial], str | None]:
     """Testa site, redirecionamento e coerência do nome antes da resposta."""
     validados: list[LeadPotencial] = []
@@ -52,10 +45,9 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
                 timeout=(4, 10),
                 allow_redirects=True,
             )
-            if not (200 <= resposta.status_code < 400):
-                rejeitados += 1
-                continue
-            if not _dominio_compativel(lead.dominio, resposta.url):
+            # 401/403 são comuns em sites reais protegidos contra robôs. O navegador
+            # ainda pode acessar essas páginas, portanto não descartamos o card.
+            if not (200 <= resposta.status_code < 400 or resposta.status_code in {401, 403}):
                 rejeitados += 1
                 continue
             validados.append(
@@ -72,8 +64,8 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
     aviso = None
     if rejeitados:
         aviso = (
-            f"{rejeitados} resultado(s) foram ocultados por não terem site oficial "
-            "acessível e coerente com a empresa."
+            f"{rejeitados} resultado(s) foram ocultados porque o servidor não conseguiu "
+            "acessar o link informado."
         )
     return validados, aviso
 
