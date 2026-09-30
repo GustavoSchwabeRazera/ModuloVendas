@@ -48,7 +48,6 @@ def _montar_relatorio(conteudo: ConteudoComercial) -> str:
     )
     return (
         f"# PANORAMA_COMERCIAL\n{conteudo.panorama_comercial}\n\n"
-        "# COMPRADORES_POTENCIAIS\nConsulte os compradores validados exibidos abaixo.\n\n"
         f"# PLANO_DE_ACAO_30_DIAS\n{plano_markdown}\n\n"
         "# E-MAIL_COMERCIAL\n"
         f"ASSUNTO: {conteudo.email_comercial.assunto}\n"
@@ -94,11 +93,13 @@ REGRAS
 - Quando algo exigir confirmação, escreva exatamente: "Validar com o importador ou órgão competente".
 - O e-mail deve ser escrito no idioma comercial predominante do país-alvo, sem mencionar IA.
 - No panorama, mantenha toda a inteligência relevante em texto contínuo, sem listas, tabelas, subtítulos ou rótulos internos.
-- O panorama precisa incluir, quando houver evidência: perfil e canais de entrada B2B (importadores, distribuidores, atacadistas e trading companies); tendências ou notícias setoriais; requisitos comerciais, logísticos e regulatórios; oportunidades e riscos; e feiras/câmaras/associações úteis para pesquisa ou networking. Não omita esses pontos só porque serão exibidos em um único bloco.
+- O panorama precisa preservar a profundidade de um plano comercial completo. Em parágrafos distintos, cubra quando houver evidência: (1) principais canais de entrada B2B — distribuidores, importadores, atacadistas e trading companies; (2) feiras, câmaras e associações úteis para pesquisa ou networking; (3) notícias, tendências e mudanças regulatórias relevantes; (4) oportunidades e riscos; (5) cuidados logísticos, documentais e comerciais.
+- Ao mencionar feira, evento, câmara ou associação, use somente nome oficial completo e atual, no idioma local ou em inglês, e apenas se houver evidência pública. Se não houver, omita em vez de inventar.
+- Não omita uma informação relevante só porque o resultado será exibido em um único bloco de texto.
 
 RESPONDA SOMENTE COM JSON VÁLIDO, sem Markdown ou texto adicional:
 {{
-  "panorama_comercial": "texto contínuo de 4 a 6 parágrafos, sem subtítulos internos, cobrindo canais B2B, tendências, requisitos, oportunidades, riscos e fontes de networking relevantes",
+  "panorama_comercial": "texto contínuo de 5 a 7 parágrafos, sem subtítulos internos, cobrindo em profundidade canais B2B, feiras/câmaras para networking, tendências, regras relevantes, oportunidades, riscos, logística e documentação",
   "plano_acao_30_dias": {{
     "dias_1_7": ["2 a 4 ações objetivas"],
     "dias_8_14": ["2 a 4 ações objetivas"],
