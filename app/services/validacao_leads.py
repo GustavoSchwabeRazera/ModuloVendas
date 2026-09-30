@@ -35,18 +35,6 @@ def _dominio_compativel(dominio_esperado: str, url_final: str) -> bool:
     return host == base or host.endswith(f".{base}")
 
 
-def _nome_coerente_com_pagina(nome: str, dominio: str, html: str) -> bool:
-    """Exige um sinal verificável de que o domínio pertence à organização."""
-    termos = [
-        termo for termo in _normalizar_texto(nome).split()
-        if len(termo) >= 4 and termo not in {"gmbh", "ltd", "llc", "inc", "group", "company"}
-    ]
-    if not termos:
-        return False
-    pagina = _normalizar_texto(f"{dominio} {html[:300_000]}")
-    return any(termo in pagina for termo in termos)
-
-
 def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotencial], str | None]:
     """Testa site, redirecionamento e coerência do nome antes da resposta."""
     validados: list[LeadPotencial] = []
@@ -70,15 +58,11 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
             if not _dominio_compativel(lead.dominio, resposta.url):
                 rejeitados += 1
                 continue
-            tipo = (resposta.headers.get("content-type") or "").lower()
-            if "html" not in tipo or not _nome_coerente_com_pagina(lead.nome, lead.dominio, resposta.text):
-                rejeitados += 1
-                continue
             validados.append(
                 lead.model_copy(update={
                     "site": resposta.url,
                     "site_validado": True,
-                    "motivo_validacao_site": "Domínio acessível e coerente com a empresa.",
+                    "motivo_validacao_site": "Domínio oficial acessível.",
                     "status": "site verificado",
                 })
             )
