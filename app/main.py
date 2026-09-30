@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.schemas import CriarProspeccaoRequest, HealthResponse, ProspeccaoResponse
 from app.services.dados_tarifarios import buscar_contexto_tarifario
 from app.services.gemini import ErroProvedorIA, extrair_leads_sugeridos, gerar_prospeccao
-from app.services.validacao_leads import validar_aderencia_produto, validar_sites_oficiais
+from app.services.validacao_leads import validar_sites_oficiais
 
 settings = get_settings()
 app = FastAPI(title="ExportAI - Módulo Vendas", version="1.0.0")
@@ -40,8 +40,7 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     leads, aviso = extrair_leads_sugeridos(conteudo_comercial)
     leads, aviso_site = validar_sites_oficiais(leads)
-    leads, aviso_validacao = validar_aderencia_produto(entrada, leads, settings)
-    avisos = (aviso_tarifario, aviso, aviso_site, aviso_validacao)
+    avisos = (aviso_tarifario, aviso, aviso_site)
     return ProspeccaoResponse(
         relatorio=relatorio,
         fontes=fontes,

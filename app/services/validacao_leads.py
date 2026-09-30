@@ -79,6 +79,7 @@ def validar_sites_oficiais(leads: list[LeadPotencial]) -> tuple[list[LeadPotenci
                     "site": resposta.url,
                     "site_validado": True,
                     "motivo_validacao_site": "Domínio acessível e coerente com a empresa.",
+                    "status": "site verificado",
                 })
             )
         except requests.RequestException:
