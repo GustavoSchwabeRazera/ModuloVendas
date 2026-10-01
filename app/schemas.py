@@ -6,32 +6,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-# ==========================================================
-# CONTEXTO ENTRE MÓDULOS
-# ==========================================================
-
 class ContextoOrigem(BaseModel):
-    """Contexto opcional vindo de outro módulo."""
+    """Contexto opcional vindo de outro módulo; a API continua utilizável sem ele."""
 
     model_config = ConfigDict(extra="forbid")
 
     origem: str = Field(default="manual", max_length=40)
+    score_diagnostico: float | None = Field(default=None, ge=0, le=100)
+    mercados_recomendados: list[str] = Field(default_factory=list, max_length=20)
 
-    score_diagnostico: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-    )
-
-    mercados_recomendados: list[str] = Field(
-        default_factory=list,
-        max_length=20,
-    )
-
-
-# ==========================================================
-# REQUEST
-# ==========================================================
 
 class CriarProspeccaoRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -39,15 +22,8 @@ class CriarProspeccaoRequest(BaseModel):
     hs6: str | None = None
     ncm: str | None = None
 
-    nome_produto: str = Field(
-        min_length=3,
-        max_length=250,
-    )
-
-    pais_alvo: str = Field(
-        min_length=2,
-        max_length=120,
-    )
+    nome_produto: str = Field(min_length=3, max_length=250)
+    pais_alvo: str = Field(min_length=2, max_length=120)
 
     idioma_alvo: str = Field(
         default="Português",
@@ -89,23 +65,16 @@ class CriarProspeccaoRequest(BaseModel):
         return value
 
 
-# ==========================================================
-# FONTES DE PESQUISA
-# ==========================================================
-
 class FontePesquisa(BaseModel):
     titulo: str
     url: str
 
 
-# ==========================================================
-# CONTEXTO TARIFÁRIO
-# ==========================================================
-
 class ContextoTarifario(BaseModel):
+    """Resumo de importações brasileiras disponível para enriquecer a prospecção."""
+
     ncm: str | None = None
     hs6: str | None = None
-
     descricao_ncm: str | None = None
 
     ano_inicial: int | None = None
@@ -125,7 +94,7 @@ class ContextoTarifario(BaseModel):
 
 
 # ==========================================================
-# FEIRAS E EVENTOS
+# SPRINT 1 - FEIRAS E EVENTOS
 # ==========================================================
 
 class FeiraEvento(BaseModel):
@@ -156,7 +125,7 @@ class FeiraEvento(BaseModel):
 
 
 # ==========================================================
-# FONTES OFICIAIS
+# SPRINT 1 - FONTES OFICIAIS
 # ==========================================================
 
 class FonteOficial(BaseModel):
@@ -176,15 +145,9 @@ class FonteOficial(BaseModel):
     )
 
 
-# ==========================================================
-# LEADS
-# ==========================================================
-
 class LeadPotencial(BaseModel):
     nome: str
-
     dominio: str
-
     site: str
 
     status: str = "potencial a validar"
@@ -232,51 +195,21 @@ class LeadPotencial(BaseModel):
     )
 
 
-# ==========================================================
-# PLANO DE AÇÃO
-# ==========================================================
-
 class PlanoAcao30Dias(BaseModel):
-    dias_1_7: list[str] = Field(
-        min_length=2,
-        max_length=4,
-    )
+    dias_1_7: list[str] = Field(min_length=2, max_length=4)
+    dias_8_14: list[str] = Field(min_length=2, max_length=4)
+    dias_15_21: list[str] = Field(min_length=2, max_length=4)
+    dias_22_30: list[str] = Field(min_length=2, max_length=4)
 
-    dias_8_14: list[str] = Field(
-        min_length=2,
-        max_length=4,
-    )
-
-    dias_15_21: list[str] = Field(
-        min_length=2,
-        max_length=4,
-    )
-
-    dias_22_30: list[str] = Field(
-        min_length=2,
-        max_length=4,
-    )
-
-
-# ==========================================================
-# EMAIL COMERCIAL
-# ==========================================================
 
 class EmailComercial(BaseModel):
-    assunto: str = Field(
-        min_length=3,
-        max_length=240,
-    )
+    assunto: str = Field(min_length=3, max_length=240)
 
     corpo: str = Field(
         min_length=20,
-        max_length=8000,
+        max_length=8_000,
     )
 
-
-# ==========================================================
-# EMPRESAS SUGERIDAS
-# ==========================================================
 
 class EmpresaSugerida(BaseModel):
     nome: str = Field(
@@ -305,23 +238,24 @@ class EmpresaSugerida(BaseModel):
     )
 
 
-# ==========================================================
-# CONTEÚDO COMERCIAL
-# ==========================================================
-
 class ConteudoComercial(BaseModel):
-    # Mantido para compatibilidade total com o Lovable atual
+    """
+    Mantém panorama_comercial para compatibilidade total
+    com o Lovable atual.
+    """
+
     panorama_comercial: str = Field(
         min_length=80,
-        max_length=10000,
+        max_length=8_000,
     )
 
-    # Novidades Sprint 1
+    # Sprint 1
     feiras_eventos: list[FeiraEvento] = Field(
         default_factory=list,
         max_length=10,
     )
 
+    # Sprint 1
     fontes_oficiais: list[FonteOficial] = Field(
         default_factory=list,
         max_length=10,
@@ -336,10 +270,6 @@ class ConteudoComercial(BaseModel):
         max_length=5,
     )
 
-
-# ==========================================================
-# RESPONSE
-# ==========================================================
 
 class ProspeccaoResponse(BaseModel):
     status: str = "sucesso"
@@ -360,10 +290,6 @@ class ProspeccaoResponse(BaseModel):
 
     aviso: str | None = None
 
-
-# ==========================================================
-# HEALTHCHECK
-# ==========================================================
 
 class HealthResponse(BaseModel):
     status: str = "ok"
