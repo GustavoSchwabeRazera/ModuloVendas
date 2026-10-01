@@ -11,9 +11,9 @@ from app.services.gemini import (
     extrair_leads_sugeridos,
     gerar_prospeccao,
 )
-from app.services.validacao_leads import validar_sites_oficiais
 
 settings = get_settings()
+
 app = FastAPI(title="ExportAI - Módulo Vendas", version="1.0.0")
 
 app.add_middleware(
@@ -41,10 +41,12 @@ def criar_prospeccao(entrada: CriarProspeccaoRequest) -> ProspeccaoResponse:
     try:
         relatorio, fontes, conteudo_comercial = gerar_prospeccao(entrada, settings, contexto_tarifario)
     except ErroProvedorIA as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     leads, aviso = extrair_leads_sugeridos(conteudo_comercial)
-    leads, aviso_site = validar_sites_oficiais(leads)
-    avisos = (aviso_tarifario, aviso, aviso_site)
+    avisos = (aviso_tarifario, aviso)
     return ProspeccaoResponse(
         relatorio=relatorio,
         fontes=fontes,

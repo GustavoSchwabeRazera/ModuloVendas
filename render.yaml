@@ -14,11 +14,13 @@ services:
       - key: EXPORTAI_CORS_ORIGINS
         sync: false
       - key: EXPORTAI_GEMINI_MODEL
-        value: gemini-3.6-flash
+        value: gemini-3.5-flash-lite
+      - key: EXPORTAI_PESQUISA_WEB_ATIVA
+        value: false
       - key: HUNTER_API_KEY
         sync: false
       - key: EXPORTAI_HUNTER_ATIVO
-        value: true
+        value: false
       - key: EXPORTAI_DADOS_TARIFARIOS_ATIVOS
         value: true
       - key: EXPORTAI_VALIDACAO_LEADS_ATIVA

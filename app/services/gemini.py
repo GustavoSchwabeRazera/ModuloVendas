@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from google import genai
 from google.genai import types
 
+
 from app.config import Settings
 from app.schemas import ConteudoComercial, ContextoTarifario, CriarProspeccaoRequest, LeadPotencial
 
@@ -206,50 +207,59 @@ REGRAS
 - Não invente URLs.
 - Não esconda feiras ou fontes oficiais dentro do panorama quando puder estruturá-las nos campos apropriados.
 
-RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor textual de `panorama_comercial` pode conter os títulos Markdown solicitados acima:
-{
-  "panorama_comercial": "### Canais de entrada\nParágrafo...\n\n### Inteligência e networking\nParágrafo...\n\n### Tendências e requisitos\nParágrafo...\n\n### Oportunidades e riscos\nParágrafo...\n\n### Logística e documentação\nParágrafo...",
+RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON.
+
+{{
+  "panorama_comercial": "### Canais de entrada\\nParágrafo...\\n\\n### Inteligência e networking\\nParágrafo...\\n\\n### Tendências e requisitos\\nParágrafo...\\n\\n### Oportunidades e riscos\\nParágrafo...\\n\\n### Logística e documentação\\nParágrafo...",
 
   "feiras_eventos": [
-    {
+    {{
       "nome": "Nome oficial",
       "descricao": "Descrição curta",
       "localizacao": "Cidade, País",
       "periodicidade": "Anual",
       "site": "https://site-oficial.com"
-    }
+    }}
   ],
 
   "fontes_oficiais": [
-    {
+    {{
       "nome": "Nome da entidade",
       "finalidade": "Como o exportador deve utilizar esta fonte",
       "url": "https://site-oficial.com"
-    }
+    }}
   ],
 
-  "plano_acao_30_dias": {
-    "dias_1_7": ["2 a 4 ações objetivas"],
-    "dias_8_14": ["2 a 4 ações objetivas"],
-    "dias_15_21": ["2 a 4 ações objetivas"],
-    "dias_22_30": ["2 a 4 ações objetivas"]
-  },
+  "plano_acao_30_dias": {{
+    "dias_1_7": [
+      "2 a 4 ações objetivas"
+    ],
+    "dias_8_14": [
+      "2 a 4 ações objetivas"
+    ],
+    "dias_15_21": [
+      "2 a 4 ações objetivas"
+    ],
+    "dias_22_30": [
+      "2 a 4 ações objetivas"
+    ]
+  }},
 
-  "email_comercial": {
+  "email_comercial": {{
     "assunto": "assunto comercial curto",
-    "corpo": "e-mail completo"
-  },
+    "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
+  }},
 
   "empresas_sugeridas": [
-    {
+    {{
       "nome": "Nome oficial",
       "justificativa": "Justificativa factual curta",
       "site": null,
       "nivel_cobertura": "LOCAL",
       "mercado_atendido": "País-alvo"
-    }
+    }}
   ]
-}
+}}
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
@@ -278,7 +288,11 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor tex
                 return _montar_relatorio(conteudo), extrair_fontes(response), conteudo
             raise ErroProvedorIA("O provedor de IA retornou uma resposta vazia.")
         except Exception as exc:
-            logger.warning("Falha no Gemini (Plano Comercial), tentativa %s/3: %s", tentativa + 1, type(exc).__name__)
+            logger.warning(
+                "Falha no Gemini (Plano Comercial), tentativa %s/3: %s",
+                tentativa + 1,
+                exc,
+            )
             if tentativa == 2:
                 raise ErroProvedorIA("Não foi possível gerar a prospecção agora.") from exc
             time.sleep(2 ** tentativa)
