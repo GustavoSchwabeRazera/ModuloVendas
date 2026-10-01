@@ -150,10 +150,10 @@ def gerar_prospeccao(
     )
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
 
-contexto_exportai = ""
+    contexto_exportai = ""
 
-if contexto and contexto.mercados_recomendados:
-    contexto_exportai = f"""
+    if contexto and contexto.mercados_recomendados:
+        contexto_exportai = f"""
 IMPORTANTE
 
 O país-alvo foi selecionado após análise prévia do Score ExportAI.
@@ -168,8 +168,8 @@ Priorize:
 - eventos setoriais relevantes;
 - fontes oficiais de consulta;
 - parceiros aderentes ao perfil solicitado.
-"""  
-    
+"""
+
     prompt = f"""
 Você é um especialista sênior em comércio exterior e vendas B2B internacionais.
 
