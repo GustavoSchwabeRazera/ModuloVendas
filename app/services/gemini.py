@@ -61,20 +61,51 @@ def extrair_fontes(response) -> list[dict[str, str]]:
 
 def _montar_relatorio(conteudo: ConteudoComercial) -> str:
     """Mantém o Markdown esperado pelo front atual durante a migração para JSON."""
+
     plano = conteudo.plano_acao_30_dias
+
     etapas = (
         ("Dias 1–7", plano.dias_1_7),
         ("Dias 8–14", plano.dias_8_14),
         ("Dias 15–21", plano.dias_15_21),
         ("Dias 22–30", plano.dias_22_30),
     )
+
     plano_markdown = "\n\n".join(
         f"## {titulo}\n" + "\n".join(f"- {item}" for item in itens)
         for titulo, itens in etapas
     )
+
+    feiras_markdown = ""
+
+    if conteudo.feiras_eventos:
+        feiras_markdown = "# FEIRAS_E_EVENTOS\n"
+
+        for feira in conteudo.feiras_eventos:
+            feiras_markdown += f"- {feira.nome}"
+
+            if feira.site:
+                feiras_markdown += f" ({feira.site})"
+
+            feiras_markdown += "\n"
+
+        feiras_markdown += "\n"
+
+    fontes_markdown = ""
+
+    if conteudo.fontes_oficiais:
+        fontes_markdown = "# FONTES_OFICIAIS\n"
+
+        for fonte in conteudo.fontes_oficiais:
+            fontes_markdown += f"- {fonte.nome}: {fonte.url}\n"
+
+        fontes_markdown += "\n"
+
     return (
         f"# PANORAMA_COMERCIAL\n{conteudo.panorama_comercial}\n\n"
         f"# PLANO_DE_ACAO_30_DIAS\n{plano_markdown}\n\n"
+        f"{feiras_markdown}"
+        f"{fontes_markdown}"
         "# E-MAIL_COMERCIAL\n"
         f"ASSUNTO: {conteudo.email_comercial.assunto}\n"
         f"CORPO:\n{conteudo.email_comercial.corpo}"
@@ -118,6 +149,26 @@ def gerar_prospeccao(
         f"mercados recomendados: {', '.join(contexto.mercados_recomendados) or 'não informado'}"
     )
     dados_tarifarios = _formatar_contexto_tarifario(contexto_tarifario)
+
+contexto_exportai = ""
+
+if contexto and contexto.mercados_recomendados:
+    contexto_exportai = f"""
+IMPORTANTE
+
+O país-alvo foi selecionado após análise prévia do Score ExportAI.
+
+Mercados recomendados:
+{", ".join(contexto.mercados_recomendados)}
+
+Considere que este mercado já demonstrou potencial para o produto analisado.
+
+Priorize:
+- canais de entrada no mercado;
+- eventos setoriais relevantes;
+- fontes oficiais de consulta;
+- parceiros aderentes ao perfil solicitado.
+"""  
     
     prompt = f"""
 Você é um especialista sênior em comércio exterior e vendas B2B internacionais.
@@ -130,6 +181,7 @@ CONTEXTO
 - Perfil de parceiro: {entrada.perfil_parceiro or 'a definir'}
 - Contexto de origem: {origem}
 - Dados históricos brasileiros: {dados_tarifarios}
+{contexto_exportai}
 
 REGRAS
 - Use somente informações verificáveis; não invente empresas, contatos, URLs, certificações, tarifas, exigências ou dados de mercado.
@@ -146,24 +198,58 @@ REGRAS
 - O panorama precisa preservar a profundidade de um plano comercial completo. Em parágrafos distintos, cubra quando houver evidência: (1) principais canais de entrada B2B — distribuidores, importadores, atacadistas e trading companies; (2) feiras, câmaras e associações úteis para pesquisa ou networking; (3) notícias, tendências e mudanças regulatórias relevantes; (4) oportunidades e riscos; (5) cuidados logísticos, documentais e comerciais.
 - Ao mencionar feira, evento, câmara ou associação, use somente nome oficial completo e atual, no idioma local ou em inglês, e apenas se houver evidência pública. Se não houver, omita em vez de inventar.
 - Não omita uma informação relevante só porque o resultado será exibido em um único bloco de texto.
+- Retorne entre 3 e 8 feiras, eventos ou conferências relevantes sempre que houver evidência pública.
+- Não invente feiras ou eventos.
+- Use apenas nomes oficiais.
+- Retorne entre 3 e 8 fontes oficiais relevantes ao produto ou ao processo de importação no país-alvo.
+- Priorize aduanas, ministérios, órgãos reguladores, agências sanitárias, câmaras de comércio e entidades governamentais.
+- Não invente URLs.
+- Não esconda feiras ou fontes oficiais dentro do panorama quando puder estruturá-las nos campos apropriados.
 
 RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON. O valor textual de `panorama_comercial` pode conter os títulos Markdown solicitados acima:
-{{
-  "panorama_comercial": "### Canais de entrada\\nParágrafo...\\n\\n### Inteligência e networking\\nParágrafo...\\n\\n### Tendências e requisitos\\nParágrafo...\\n\\n### Oportunidades e riscos\\nParágrafo...\\n\\n### Logística e documentação\\nParágrafo...",
-  "plano_acao_30_dias": {{
+{
+  "panorama_comercial": "### Canais de entrada\nParágrafo...\n\n### Inteligência e networking\nParágrafo...\n\n### Tendências e requisitos\nParágrafo...\n\n### Oportunidades e riscos\nParágrafo...\n\n### Logística e documentação\nParágrafo...",
+
+  "feiras_eventos": [
+    {
+      "nome": "Nome oficial",
+      "descricao": "Descrição curta",
+      "localizacao": "Cidade, País",
+      "periodicidade": "Anual",
+      "site": "https://site-oficial.com"
+    }
+  ],
+
+  "fontes_oficiais": [
+    {
+      "nome": "Nome da entidade",
+      "finalidade": "Como o exportador deve utilizar esta fonte",
+      "url": "https://site-oficial.com"
+    }
+  ],
+
+  "plano_acao_30_dias": {
     "dias_1_7": ["2 a 4 ações objetivas"],
     "dias_8_14": ["2 a 4 ações objetivas"],
     "dias_15_21": ["2 a 4 ações objetivas"],
     "dias_22_30": ["2 a 4 ações objetivas"]
-  }},
-  "email_comercial": {{
+  },
+
+  "email_comercial": {
     "assunto": "assunto comercial curto",
-    "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
-  }},
+    "corpo": "e-mail completo"
+  },
+
   "empresas_sugeridas": [
-    {{"nome": "Nome oficial", "justificativa": "Justificativa factual curta", "site": "https://dominio-oficial.example ou null", "nivel_cobertura": "LOCAL ou REGIONAL", "mercado_atendido": "País-alvo ou região comprovada"}}
+    {
+      "nome": "Nome oficial",
+      "justificativa": "Justificativa factual curta",
+      "site": null,
+      "nivel_cobertura": "LOCAL",
+      "mercado_atendido": "País-alvo"
+    }
   ]
-}}
+}
 """.strip()
 
     client = genai.Client(api_key=settings.gemini_api_key)
