@@ -5,42 +5,64 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+TipoCorrespondenciaProduto = Literal[
+    "PRODUTO_EXATO",
+    "CATEGORIA_RELACIONADA",
+    "SETOR_RELACIONADO",
+    "NAO_COMPROVADO",
+    "INCOMPATIVEL",
+]
 
-class ContextoOrigem(BaseModel):
-    """Contexto opcional vindo de outro módulo; a API continua utilizável sem ele."""
+PapelComercial = Literal[
+    "IMPORTADOR",
+    "TRADING",
+    "DISTRIBUIDOR",
+    "ATACADISTA",
+    "FABRICANTE",
+    "VAREJISTA",
+    "HORECA",
+    "PRESTADOR_SERVICO",
+    "OUTRO",
+    "NAO_COMPROVADO",
+]
 
-    model_config = ConfigDict(extra="forbid")
+CriterioEvidencia = Literal[
+    "ADERENCIA_PRODUTO",
+    "IMPORTACAO_COMPRA",
+    "PRESENCA_MERCADO",
+    "PERFIL_COMERCIAL",
+    "QUALIDADE_DOMINIO",
+]
 
+TipoFonteEvidencia = Literal[
+    "SITE_EMPRESA",
+    "FONTE_OFICIAL",
+    "FONTE_INDEPENDENTE",
+    "DIRETORIO_COMERCIAL",
+    "OUTRA",
+]
+
+
+class SchemaBase(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class ContextoOrigem(SchemaBase):
     origem: str = Field(default="manual", max_length=40)
     score_diagnostico: float | None = Field(default=None, ge=0, le=100)
     mercados_recomendados: list[str] = Field(default_factory=list, max_length=20)
 
 
-class CriarProspeccaoRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+class CriarProspeccaoRequest(SchemaBase):
     hs6: str | None = None
     ncm: str | None = None
-
     nome_produto: str = Field(min_length=3, max_length=250)
     pais_alvo: str = Field(min_length=2, max_length=120)
-
-    idioma_alvo: str = Field(
-        default="Português",
-        min_length=2,
-        max_length=60,
-    )
-
-    disponibilidade: str | None = Field(
-        default=None,
-        max_length=120,
-    )
-
-    perfil_parceiro: str | None = Field(
-        default=None,
-        max_length=160,
-    )
-
+    idioma_alvo: str = Field(default="Português", min_length=2, max_length=60)
+    disponibilidade: str | None = Field(default=None, max_length=120)
+    quantidade_disponivel: float | None = Field(default=None, gt=0)
+    unidade_disponibilidade: str | None = Field(default=None, min_length=1, max_length=40)
+    perfil_parceiro: str | None = Field(default=None, max_length=160)
     contexto_origem: ContextoOrigem | None = None
 
     @field_validator("ncm", "hs6", mode="before")
@@ -65,232 +87,140 @@ class CriarProspeccaoRequest(BaseModel):
         return value
 
 
-class FontePesquisa(BaseModel):
-    titulo: str
-    url: str
+class FontePesquisa(SchemaBase):
+    titulo: str = Field(min_length=2, max_length=300)
+    url: str = Field(min_length=8, max_length=2_000)
 
 
-class ContextoTarifario(BaseModel):
-    """Resumo de importações brasileiras disponível para enriquecer a prospecção."""
-
+class ContextoTarifario(SchemaBase):
     ncm: str | None = None
     hs6: str | None = None
     descricao_ncm: str | None = None
-
     ano_inicial: int | None = None
     ano_final: int | None = None
-
     operacoes: int | None = None
-
     kg_liquido: int | None = None
-
     valor_fob_usd: int | None = None
     valor_frete_usd: int | None = None
     valor_seguro_usd: int | None = None
-
     aliquota_media_ii: float | None = None
-
     observacao: str | None = None
 
 
-# ==========================================================
-# SPRINT 1 - FEIRAS E EVENTOS
-# ==========================================================
+class EvidenciaLead(SchemaBase):
+    """Uma URL única pode comprovar vários critérios sem duplicação."""
 
-class FeiraEvento(BaseModel):
-    nome: str = Field(
-        min_length=2,
-        max_length=250,
-    )
-
-    descricao: str = Field(
-        min_length=10,
-        max_length=500,
-    )
-
-    localizacao: str | None = Field(
-        default=None,
-        max_length=160,
-    )
-
-    periodicidade: str | None = Field(
-        default=None,
-        max_length=80,
-    )
-
-    site: str | None = Field(
-        default=None,
-        max_length=500,
-    )
+    titulo: str = Field(min_length=2, max_length=300)
+    url: str = Field(min_length=8, max_length=2_000)
+    descricao: str = Field(min_length=5, max_length=800)
+    criterios: list[CriterioEvidencia] = Field(min_length=1, max_length=5)
+    tipo_fonte: TipoFonteEvidencia
+    correspondencia_produto: TipoCorrespondenciaProduto = "NAO_COMPROVADO"
+    papeis_comerciais: list[PapelComercial] = Field(default_factory=list, max_length=9)
+    consultado_em: str | None = Field(default=None, max_length=40)
 
 
-# ==========================================================
-# SPRINT 1 - FONTES OFICIAIS
-# ==========================================================
-
-class FonteOficial(BaseModel):
-    nome: str = Field(
-        min_length=2,
-        max_length=250,
-    )
-
-    finalidade: str = Field(
-        min_length=10,
-        max_length=300,
-    )
-
-    url: str = Field(
-        min_length=12,
-        max_length=500,
-    )
+class ComponentesLeadScore(SchemaBase):
+    aderencia_produto: int = Field(ge=0, le=100)
+    presenca_mercado: int = Field(ge=0, le=100)
+    evidencia_publica: int = Field(ge=0, le=100)
+    qualidade_dominio: int = Field(ge=0, le=100)
+    perfil_solicitado: int = Field(ge=0, le=100)
 
 
-class LeadPotencial(BaseModel):
-    nome: str
-    dominio: str
-    site: str
+class ResultadoLeadScore(SchemaBase):
+    componentes: ComponentesLeadScore
+    score_total: int = Field(ge=0, le=100)
+    classe: Literal["A", "B", "C"]
+    justificativas: list[str] = Field(default_factory=list, max_length=5)
 
-    status: str = "potencial a validar"
 
-    fonte: str = "Hunter Discover"
-
-    emails_profissionais_disponiveis: int | None = None
-
-    validacao_produto: str = "NAO_CONFIRMADA"
-
-    justificativa_validacao: str | None = None
-
-    evidencia_url: str | None = None
-
+class LeadPotencial(SchemaBase):
+    nome: str = Field(min_length=2, max_length=240)
+    dominio: str | None = Field(default=None, max_length=500)
+    site: str | None = Field(default=None, max_length=2_000)
+    status: Literal[
+        "potencial a validar",
+        "site não informado",
+        "site não verificado",
+        "site verificado",
+        "aderente validado",
+        "parceiro regional a validar",
+        "evidência parcial",
+        "não aderente",
+    ] = "potencial a validar"
+    fonte: str = Field(default="Gemini + Google Search", max_length=160)
+    emails_profissionais_disponiveis: int | None = Field(default=None, ge=0)
+    validacao_produto: Literal["ADERENTE", "NAO_ADERENTE", "NAO_CONFIRMADA"] = "NAO_CONFIRMADA"
+    correspondencia_produto: TipoCorrespondenciaProduto = "NAO_COMPROVADO"
+    papeis_comerciais: list[PapelComercial] = Field(default_factory=list, max_length=9)
+    importacao_produto_comprovada: bool = False
+    justificativa_validacao: str | None = Field(default=None, max_length=800)
+    evidencia_url: str | None = Field(default=None, max_length=2_000)
+    evidencias: list[EvidenciaLead] = Field(default_factory=list, max_length=12)
+    fontes_independentes: int = Field(default=0, ge=0, le=20)
     apto_para_abordagem: bool = False
-
     site_validado: bool = False
-
-    motivo_validacao_site: str | None = None
-
-    nivel_cobertura: Literal[
-        "LOCAL",
-        "REGIONAL",
-    ] = "LOCAL"
-
-    mercado_atendido: str | None = None
-
-    # Preparação para Sprint 2
-
-    score_oportunidade: int | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-    )
-
-    classificacao: Literal[
-        "A",
-        "B",
-        "C",
-    ] | None = None
-
-    justificativa_score: str | None = Field(
-        default=None,
-        max_length=300,
-    )
+    motivo_validacao_site: str | None = Field(default=None, max_length=300)
+    nivel_cobertura: Literal["LOCAL", "REGIONAL"] = "LOCAL"
+    mercado_atendido: str | None = Field(default=None, max_length=160)
+    dominio_oficial_confirmado: bool = False
+    lead_score: ResultadoLeadScore | None = None
 
 
-class PlanoAcao30Dias(BaseModel):
+class PlanoAcao30Dias(SchemaBase):
     dias_1_7: list[str] = Field(min_length=2, max_length=4)
     dias_8_14: list[str] = Field(min_length=2, max_length=4)
     dias_15_21: list[str] = Field(min_length=2, max_length=4)
     dias_22_30: list[str] = Field(min_length=2, max_length=4)
 
 
-class EmailComercial(BaseModel):
+class EmailComercial(SchemaBase):
     assunto: str = Field(min_length=3, max_length=240)
-
-    corpo: str = Field(
-        min_length=20,
-        max_length=8_000,
-    )
+    corpo: str = Field(min_length=20, max_length=8_000)
 
 
-class EmpresaSugerida(BaseModel):
-    nome: str = Field(
-        min_length=2,
-        max_length=240,
-    )
-
-    justificativa: str = Field(
-        min_length=10,
-        max_length=400,
-    )
-
-    site: str | None = Field(
-        default=None,
-        max_length=500,
-    )
-
-    nivel_cobertura: Literal[
-        "LOCAL",
-        "REGIONAL",
-    ]
-
-    mercado_atendido: str = Field(
-        min_length=2,
-        max_length=160,
-    )
+class EmpresaSugerida(SchemaBase):
+    nome: str = Field(min_length=2, max_length=240)
+    justificativa: str = Field(min_length=10, max_length=400)
+    site: str | None = Field(default=None, max_length=500)
+    nivel_cobertura: Literal["LOCAL", "REGIONAL"]
+    mercado_atendido: str = Field(min_length=2, max_length=160)
 
 
-class ConteudoComercial(BaseModel):
-    """
-    Mantém panorama_comercial para compatibilidade total
-    com o Lovable atual.
-    """
+class FeiraEvento(SchemaBase):
+    nome: str = Field(min_length=2, max_length=240)
+    descricao: str = Field(min_length=10, max_length=600)
+    localizacao: str | None = Field(default=None, max_length=240)
+    periodicidade: str | None = Field(default=None, max_length=120)
+    site: str | None = Field(default=None, max_length=2_000)
 
-    panorama_comercial: str = Field(
-        min_length=80,
-        max_length=8_000,
-    )
 
-    # Sprint 1
-    feiras_eventos: list[FeiraEvento] = Field(
-        default_factory=list,
-        max_length=10,
-    )
+class FonteOficial(SchemaBase):
+    nome: str = Field(min_length=2, max_length=240)
+    finalidade: str = Field(min_length=10, max_length=600)
+    url: str = Field(min_length=8, max_length=2_000)
 
-    # Sprint 1
-    fontes_oficiais: list[FonteOficial] = Field(
-        default_factory=list,
-        max_length=10,
-    )
 
+class ConteudoComercial(SchemaBase):
+    panorama_comercial: str = Field(min_length=80, max_length=8_000)
+    feiras_eventos: list[FeiraEvento] = Field(default_factory=list, max_length=8)
+    fontes_oficiais: list[FonteOficial] = Field(default_factory=list, max_length=8)
     plano_acao_30_dias: PlanoAcao30Dias
-
     email_comercial: EmailComercial
-
-    empresas_sugeridas: list[EmpresaSugerida] = Field(
-        default_factory=list,
-        max_length=5,
-    )
+    empresas_sugeridas: list[EmpresaSugerida] = Field(default_factory=list, max_length=5)
 
 
-class ProspeccaoResponse(BaseModel):
+class ProspeccaoResponse(SchemaBase):
     status: str = "sucesso"
-
     relatorio: str
-
     contexto_tarifario: ContextoTarifario | None = None
-
-    fontes: list[FontePesquisa] = Field(
-        default_factory=list,
-    )
-
-    leads: list[LeadPotencial] = Field(
-        default_factory=list,
-    )
-
+    fontes: list[FontePesquisa] = Field(default_factory=list)
+    leads: list[LeadPotencial] = Field(default_factory=list)
     conteudo_comercial: ConteudoComercial | None = None
-
     aviso: str | None = None
 
 
-class HealthResponse(BaseModel):
+class HealthResponse(SchemaBase):
     status: str = "ok"
     servico: str = "exportai-modulo-vendas"
