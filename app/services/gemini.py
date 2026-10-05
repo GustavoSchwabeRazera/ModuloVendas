@@ -247,7 +247,7 @@ RESPONDA SOMENTE COM JSON VÁLIDO, sem texto adicional fora do JSON.
 
   "email_comercial": {{
     "assunto": "assunto comercial curto",
-    "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável]"
+    "corpo": "e-mail completo, editável, com saudação, proposta, chamada para conversa e assinatura com [Nome da empresa] e [Nome do responsável] SEMPRE NO IDIOMA DO PAIS ALVO"
   }},
 
   "empresas_sugeridas": [
